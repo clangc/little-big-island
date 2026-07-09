@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Island Finder — The Little Big Island</title>
+<style>
+  :root{
+    --ink:#26333e; --paper:#faf4e6; --card:#ffffff;
+    --sea:#2e7d8f; --sea-deep:#1f5d6e; --sand:#e9d8a6; --leaf:#4c9a6a;
+    --accent:#e07a3f; --gold:#c9a227; --soft:#7d8a94;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, #fdf9ee 0%, var(--paper) 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px 14px;
+  }
+  .stage{width:100%; max-width:720px;}
+  .card{
+    background:var(--card); border-radius:18px; padding:34px 34px 30px;
+    box-shadow:0 10px 30px rgba(38,51,62,.12), 0 2px 6px rgba(38,51,62,.08);
+    border:1px solid #eee3cd;
+  }
+  h1{font-size:34px; letter-spacing:.5px; color:var(--sea-deep); line-height:1.15;}
+  h2{font-size:22px; color:var(--sea-deep); line-height:1.35; margin-bottom:6px;}
+  .kicker{
+    text-transform:uppercase; letter-spacing:2.5px; font-size:11.5px;
+    color:var(--accent); margin-bottom:10px; font-weight:bold;
+  }
+  .sub{color:var(--soft); font-style:italic; margin-top:10px; line-height:1.5;}
+  .btn{
+    display:inline-block; border:none; cursor:pointer; font-family:inherit;
+    background:var(--sea); color:#fff; font-size:17px; padding:13px 26px;
+    border-radius:999px; margin-top:22px; transition:transform .12s, background .12s;
+  }
+  .btn:hover{background:var(--sea-deep); transform:translateY(-1px);}
+  .btn.ghost{background:transparent; color:var(--sea-deep); border:2px solid var(--sea);}
+  .btn.ghost:hover{background:#eef6f5;}
+  .opt{
+    display:block; width:100%; text-align:left; cursor:pointer; font-family:inherit;
+    background:#fbf7ec; border:2px solid #eadfc4; color:var(--ink);
+    font-size:16.5px; line-height:1.45; padding:14px 16px; border-radius:12px;
+    margin-top:11px; transition:border-color .12s, background .12s, transform .12s;
+  }
+  .opt:hover{border-color:var(--sea); background:#f2f8f4; transform:translateX(3px);}
+  .dots{display:flex; gap:7px; margin-bottom:20px;}
+  .dot{width:10px; height:10px; border-radius:50%; background:#e3d9bf;}
+  .dot.done{background:var(--sea);}
+  .dot.now{background:var(--accent); transform:scale(1.25);}
+  .qnum{color:var(--soft); font-size:13px; margin-bottom:6px; font-style:italic;}
+  .fade{animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  /* result */
+  .island-name{font-size:30px; color:var(--sea-deep); margin:4px 0 2px; line-height:1.2;}
+  .mapwrap{
+    margin:18px auto 6px; border-radius:16px; overflow:hidden;
+    border:1px solid #e5dcc4; background:linear-gradient(180deg,#bfe3ea, #9fd2dd);
+  }
+  svg{display:block; width:100%; height:auto;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;}}
+  .tile{
+    background:#fbf7ec; border:1px solid #eadfc4; border-radius:12px; padding:14px 16px;
+  }
+  .tile .label{
+    text-transform:uppercase; letter-spacing:1.8px; font-size:10.5px; color:var(--accent);
+    font-weight:bold; margin-bottom:5px;
+  }
+  .tile .big{font-size:19px; color:var(--sea-deep); font-weight:bold;}
+  .tile p{font-size:14.5px; line-height:1.45; margin-top:4px; color:#4a5a66;}
+  .quote{
+    margin-top:18px; padding:14px 18px; border-left:4px solid var(--gold);
+    background:#fffbef; border-radius:0 10px 10px 0; font-style:italic; line-height:1.55;
+  }
+  .ps{margin-top:14px; text-align:center; color:var(--soft); font-size:13.5px; font-style:italic;}
+  .actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+  .credit{margin-top:16px; text-align:center; font-size:12px; color:#a89f8a;}
+  @media print{
+    body{background:#fff; padding:0;}
+    .card{box-shadow:none; border:none;}
+    .actions,.credit .noprint,.noprint{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="stage"><div class="card" id="app"></div></div>
+
+<script>
+"use strict";
+/* ============================================================
+   THE ISLAND FINDER — prototype demo
+   World & words © Bianca Lang — The Little Big Island
+   Every question is a placeholder for Bianca's own writing.
+   ============================================================ */
+
+const TREASURES = {
+  hope:       {treasure:"The Spark",  companion:"Bright", meaning:"the part of you that believes before seeing",
+               line:"Bright tips his hat. “Pocket sunrise. Called it.”"},
+  joy:        {treasure:"The Horn",   companion:"Kazoo",  meaning:"the part of you that chooses joy, even when silence tempts you",
+               line:"Kazoo blasts her horn so hard a nearby tree starts giggling."},
+  dream:      {treasure:"The Note",   companion:"???",    meaning:"the part of you that imagines farther than the map",
+               line:"The Note hums. It has no keeper yet. Suspicious. Ask the author."},
+  love:       {treasure:"The Seed",   companion:"Patch",  meaning:"the part of you that gives, so others can grow",
+               line:"Patch offers you a raisin. It is, somehow, the nicest thing all day."},
+  confidence: {treasure:"The Wing",   companion:"Grit",   meaning:"the part of you that remembers you can",
+               line:"“BEHOLD!” says Grit, from somewhere unnecessarily high up."},
+  courage:    {treasure:"The Shield", companion:"Shaky",  meaning:"the part of you that moves forward, even when you're afraid",
+               line:"Shaky gives you a thumbs up. It is shaking. It still counts. It counts double."},
+  faith:      {treasure:"The Thread", companion:"Thread", meaning:"the golden thread that ties all the others together",
+               line:"Thread smiles like she has read this exact page before."}
+};
+
+const NEED_NOTES = {
+  hope:"Your island keeps its caves dim on purpose. It wants you to look for the pinprick of light — and grab it, even if a guide says just to notice it.",
+  joy:"Your island is a little too quiet lately. It is legally begging you to laugh at something dumb. The turtle is STILL crossing the road.",
+  dream:"Your island's map has blank edges. That's not missing land — that's land you haven't imagined yet. Pancake-shaped, if you squint.",
+  love:"Your island has cracked ground in places. Nothing's wrong with it — it's just waiting for someone to plant something small and stubborn.",
+  confidence:"Your island built a mountain and forgot to build stairs. It's not being rude. It just remembers you can — and it's waiting for you to remember too.",
+  courage:"Your island's forest whispers sometimes. The whispers lie. You're allowed to yell 'STOP BEING DRAMATIC' — it works better than you'd think.",
+  faith:"Your island's treasures keep drifting apart. They need the thread. Hold on to it — everything else holds on to you."
+};
+
+const ADJ = {
+  hope:["Glowing","Lantern-Lit","First-Light","Ember"],
+  joy:["Giggling","Snort-Laughing","Kazooing","Boogie"],
+  dream:["Impossible","Upside-Down","Pancake-Shaped","Farther-Than-The-Map"],
+  love:["Blooming","Raisin-Rich","Soft-Rain","Open-Handed"],
+  confidence:["Unclimbable","BEHOLD-Worthy","High-Five","Sky-Bragging"],
+  courage:["Storm-Proof","Still-Standing","Knees-Knocking","Wolf-Facing"],
+  faith:["Unsinkable","Golden-Thread","Mustard-Seed","Steadfast"]
+};
+const NOUN = {
+  hope:["Cove of Sparks","Sunrise Shores","Cape of Maybe"],
+  joy:["Isle of Giggles","Snickerdoodle Shores","Atoll of HA"],
+  dream:["Isle of What-If","Beyond-the-Map Bay","Cloud-High Key"],
+  love:["Garden Isle","Picnic Point","Isle of Second Helpings"],
+  confidence:["Summit Isle","Cape BEHOLD","Isle of Obviously"],
+  courage:["Braveheart Bank","Isle of Anyway","Standfast Shores"],
+  faith:["Thread-Tied Isle","Anchorhold","Isle of Even So"]
+};
+
+const QUESTIONS = [
+  {q:"You arrive. The sign says: “WELCOME! NO REFUNDS. ALSO, NO NEED.” You:",
+   opts:[
+    ["“No refunds? Wasn't going to leave anyway.”","confidence"],
+    ["“Also no need? Okay. That's weirdly comforting.”","faith"],
+    ["“I'd like to speak to the island's manager.”","joy"],
+    ["“…did the sign just change while I was reading it?”","dream"]]},
+  {q:"A cave up ahead claims it eats people. (It's exaggerating. Probably.) You:",
+   opts:[
+    ["Walk in. Snacks don't eat snacks.","courage"],
+    ["Ask if it's tried snacks instead of people.","joy"],
+    ["Call the bluff — real monsters don't clear their throats first.","hope"],
+    ["Grab a friend's hand and go in together.","love"]]},
+  {q:"In the dark: one tiny light, a blink away from gone. “Don't grab it,” says Bright. “Just notice it.” You:",
+   opts:[
+    ["Grab it immediately. Pocket sunrise!","confidence"],
+    ["Notice it politely. Rules occasionally exist.","faith"],
+    ["Ask the light what IT wants first.","love"],
+    ["Wonder what else glows out here that nobody's found.","dream"]]},
+  {q:"The beach turns into a cliff, because islands have drama. Silver water waaaay below. You:",
+   opts:[
+    ["Laugh at the situation until (somehow) that helps.","joy"],
+    ["Start building stairs. Out of what? Details.","confidence"],
+    ["Sit down and imagine twelve ways across.","dream"],
+    ["Figure the island didn't bring you here to strand you.","faith"]]},
+  {q:"Kazoo asks: “Why did the turtle cross the road?!” You:",
+   opts:[
+    ["“We don't know yet — it's STILL CROSSING.” (You've heard this one.)","joy"],
+    ["“To get to the Shell station.” (You make it worse. Beautifully.)","confidence"],
+    ["Genuinely consider the turtle's hopes and dreams.","dream"],
+    ["Laugh mostly because Kazoo's laugh is contagious.","love"]]},
+  {q:"Patch offers you a raisin — “a dried disappointment,” according to Bright. You:",
+   opts:[
+    ["Take it. Small gifts count double.","love"],
+    ["Plant it. Disappointment grows if you plant it. Apparently.","hope"],
+    ["Ask if there's any rotisserie chicken.","joy"],
+    ["Save half for whoever needs it later.","love"]]},
+  {q:"The forest starts whispering: “You can't do it. Go back.” You:",
+   opts:[
+    ["Yell: “HEY FOREST! STOP BEING DRAMATIC!”","courage"],
+    ["Whisper back: “Watch me.”","confidence"],
+    ["Check on your friends — whispers lie loudest to the quiet ones.","love"],
+    ["Keep walking. Trees with opinions are still just trees.","faith"]]},
+  {q:"A mountain: vertical “nope,” all the way up. Clouds are giving it high-fives. You:",
+   opts:[
+    ["Squint for the pancake angle.","dream"],
+    ["Start climbing before your doubt finishes its sentence.","courage"],
+    ["Announce yourself: “BEHOLD!” It feels amazing, honestly.","confidence"],
+    ["Say please. To the mountain. It's worked before.","faith"]]},
+  {q:"The island gets ANGRY. Storm. Thunder practicing its loudest yell in history. You:",
+   opts:[
+    ["Duet with the thunder.","joy"],
+    ["Build the shelter and count heads. Twice.","love"],
+    ["Watch from the edge — storms end, and you want to see this one lose.","hope"],
+    ["Plant your feet and hold the shield.","courage"]]},
+  {q:"The last lake doesn't show your reflection. It shows your FULL self. You look:",
+   opts:[
+    ["Immediately. Been waiting for this.","confidence"],
+    ["Slowly. Some things deserve a drumroll.","dream"],
+    ["With your friends beside you.","love"],
+    ["Already knowing what it'll show. You look anyway.","faith"]]}
+];
+
+let answers = [];
+const app = document.getElementById("app");
+
+/* seeded rng so the same answers always grow the same island */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function seedFrom(arr){let h=2166136261;const s=arr.join("-");for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+
+function start(){
+  answers=[];
+  app.innerHTML = `
+    <div class="fade" style="text-align:center">
+      <div class="kicker">The Little Big Island presents</div>
+      <h1>The Island Finder</h1>
+      <p class="sub">Somewhere out there is an island that refuses to show up unless it's yours.<br>
+      Ten questions. Zero wrong answers. One island — little <em>and</em> big.</p>
+      <button class="btn" onclick="ask(0)">Find my island</button>
+      <p class="sub" style="font-size:13px; margin-top:18px">House rule: you don't get to see the island until the island gets to see you.</p>
+    </div>
+    <div class="credit">Prototype demo · World &amp; words © Bianca — questions here are stand-ins for hers</div>`;
+}
+
+function ask(n){
+  if(n>=QUESTIONS.length){reveal();return;}
+  const Q=QUESTIONS[n];
+  const dots = QUESTIONS.map((_,i)=>`<div class="dot ${i<n?"done":i===n?"now":""}"></div>`).join("");
+  app.innerHTML = `
+    <div class="fade">
+      <div class="dots">${dots}</div>
+      <div class="qnum">Question ${n+1} of ${QUESTIONS.length}</div>
+      <h2>${Q.q}</h2>
+      ${Q.opts.map((o,i)=>`<button class="opt" onclick="pick(${n},${i})">${o[0]}</button>`).join("")}
+      ${n>0?`<button class="btn ghost noprint" style="margin-top:18px; font-size:14px; padding:9px 18px" onclick="back(${n})">← go back</button>`:""}
+    </div>`;
+}
+function pick(n,i){answers[n]=i; ask(n+1);}
+function back(n){answers.length=n-1; ask(n-1);}
+
+function reveal(){
+  // score treasures
+  const score={hope:0,joy:0,dream:0,love:0,confidence:0,courage:0,faith:0};
+  answers.forEach((a,i)=>{score[QUESTIONS[i].opts[a][1]]+=2;});
+  const order=Object.keys(score).sort((a,b)=>score[b]-score[a] || a.localeCompare(b));
+  const top=order[0], second=order[1];
+  const lows=order.filter(k=>score[k]===score[order[order.length-1]]);
+  const rng0=mulberry32(seedFrom(answers));
+  const need=lows[Math.floor(rng0()*lows.length)];
+
+  const name=`The ${ADJ[top][Math.floor(rng0()*ADJ[top].length)]} ${NOUN[second][Math.floor(rng0()*NOUN[second].length)]}`;
+  const weather = top==="joy" ? "Sunny, with a 100% chance of the sun literally singing"
+        : top==="love" ? "Soft, serious rain — just enough to matter"
+        : top==="courage" ? "Dramatic clouds that are mostly bluffing"
+        : top==="dream" ? "Fog at the edges (that's unimagined land, not weather)"
+        : top==="confidence" ? "Clear skies. The clouds got out of the way. Smart clouds."
+        : top==="hope" ? "Dawn. Somehow it's always almost-dawn here"
+        : "Calm seas, golden light, suspicious amounts of peace";
+
+  const T=TREASURES[top], N=TREASURES[need];
+  const map=drawIsland(mulberry32(seedFrom(answers.concat(99))), score, top);
+
+  app.innerHTML = `
+    <div class="fade" style="text-align:center">
+      <div class="kicker">The island has seen you</div>
+      <div class="island-name">${name}</div>
+      <p class="sub" style="margin-top:2px">Population: you (and whoever you bring). Size: little <em>and</em> big.</p>
+      <div class="mapwrap">${map}</div>
+      <div class="grid" style="text-align:left">
+        <div class="tile">
+          <div class="label">Your strongest treasure</div>
+          <div class="big">${T.treasure}</div>
+          <p>${T.meaning[0].toUpperCase()+T.meaning.slice(1)}.</p>
+          <p><strong>Companion match: ${T.companion}.</strong> ${T.line}</p>
+        </div>
+        <div class="tile">
+          <div class="label">The treasure your island says you need most right now</div>
+          <div class="big">${N.treasure}</div>
+          <p>${NEED_NOTES[need]}</p>
+        </div>
+        <div class="tile">
+          <div class="label">Weather report</div>
+          <div class="big" style="font-size:16px">${weather}</div>
+        </div>
+        <div class="tile">
+          <div class="label">Island facts</div>
+          <p>Rainbows: <strong>0</strong> <em>(this is not a rainbow story)</em><br>
+          Dragon poop: <strong>trace amounts</strong> — watch your step<br>
+          Refunds: <strong>none</strong> · Need for refunds: <strong>also none</strong></p>
+        </div>
+      </div>
+      <div class="quote">“The island is not outside you. It never was. You just needed to meet the pieces, remember their names, and believe.”</div>
+      <div class="ps">P.S. — You weren't the first. You won't be the last.</div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn noprint" onclick="window.print()">Print my island</button>
+        <button class="btn ghost noprint" onclick="start()">Find it again (it may have changed…)</button>
+      </div>
+      <div class="credit">Prototype demo · World &amp; words © Bianca · The Little Big Island</div>
+    </div>`;
+}
+
+/* ---------- island drawing ---------- */
+function drawIsland(rng, score, top){
+  const W=640,H=420,cx=320,cy=225;
+  // island blob
+  const pts=[], n=14, baseR=135;
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2;
+    const r=baseR*(0.75+rng()*0.45)*(1+0.12*Math.sin(a*2+rng()*3));
+    pts.push([cx+Math.cos(a)*r*1.25, cy+Math.sin(a)*r*0.82]);
+  }
+  const blob=smooth(pts), inner=smooth(pts.map(p=>[cx+(p[0]-cx)*0.82, cy+(p[1]-cy)*0.8]));
+
+  let f="";
+  // seashell path
+  f+=`<path d="M ${cx-10} ${cy+120} Q ${cx-40} ${cy+60} ${cx-5} ${cy+10} T ${cx+30} ${cy-80}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="1 10" stroke-linecap="round" opacity=".9"/>`;
+
+  // mountain (confidence/courage)
+  const mScale = 0.7 + (score.confidence+score.courage)/28;
+  f+=mountain(cx+62, cy-52, 66*mScale, rng);
+  // forest (joy/love)
+  const trees = 4 + Math.round((score.joy+score.love)/4);
+  for(let i=0;i<trees;i++){ f+=tree(cx-115+rng()*95, cy-15+rng()*95, 10+rng()*9, rng); }
+  // cave (hope)
+  f+=cave(cx-88, cy-62);
+  // lake mirror (always — chapter 10)
+  f+=`<ellipse cx="${cx+58}" cy="${cy+78}" rx="40" ry="17" fill="#bfe6ec" stroke="#8fc6d2" stroke-width="2"/>
+      <ellipse cx="${cx+58}" cy="${cy+74}" rx="26" ry="8" fill="#e6f7fa" opacity=".8"/>`;
+  // library lighthouse-treehouse (faith/dream)
+  if(score.faith+score.dream>=6) f+=library(cx+128, cy+8);
+  // sprout field (love)
+  if(score.love>=4){for(let i=0;i<6;i++){f+=sprout(cx-30+rng()*80, cy+95+rng()*18);}}
+  // sun or storm
+  const sky = top==="joy"
+    ? `<circle cx="70" cy="62" r="30" fill="#f7cf5c"/><path d="M 55 66 Q 70 78 85 66" stroke="#b98a1e" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="60" cy="55" r="3.4" fill="#b98a1e"/><circle cx="80" cy="55" r="3.4" fill="#b98a1e"/><text x="70" y="26" text-anchor="middle" font-size="11" fill="#7a6a35" font-style="italic">♪ (the sun, singing)</text>`
+    : top==="courage"
+    ? `<g opacity=".85"><ellipse cx="86" cy="58" rx="44" ry="20" fill="#93a3ad"/><ellipse cx="120" cy="66" rx="34" ry="16" fill="#a8b6be"/><text x="96" y="100" text-anchor="middle" font-size="10.5" fill="#5c6b74" font-style="italic">(mostly bluffing)</text></g>`
+    : `<circle cx="74" cy="60" r="26" fill="#f7d97c"/>`;
+  f+=sky;
+
+  // wandering sign
+  f+=`<g transform="translate(${cx-165},${cy+58}) rotate(-6)">
+      <rect x="-4" y="0" width="7" height="34" fill="#8a6b45"/>
+      <rect x="-34" y="-24" width="68" height="27" rx="4" fill="#caa46b" stroke="#8a6b45" stroke-width="2"/>
+      <text x="0" y="-12" text-anchor="middle" font-size="8.5" fill="#4c3a22">WELCOME!</text>
+      <text x="0" y="-3" text-anchor="middle" font-size="6.6" fill="#4c3a22">no refunds · also, no need</text></g>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A hand-drawn map of your island">
+    <rect width="${W}" height="${H}" fill="url(#sea)"/>
+    <defs>
+      <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#bfe3ea"/><stop offset="1" stop-color="#8fc3d4"/>
+      </linearGradient>
+    </defs>
+    ${[1,2,3].map(i=>`<ellipse cx="${cx}" cy="${cy+8}" rx="${215+i*26}" ry="${150+i*17}" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="${0.35-i*0.09}"/>`).join("")}
+    <path d="${blob}" fill="var(--sand,#e9d8a6)" stroke="#d4b878" stroke-width="3"/>
+    <path d="${inner}" fill="#8fbf7f" stroke="none" opacity=".95"/>
+    ${f}
+  </svg>`;
+}
+function smooth(p){
+  let d=`M ${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+  for(let i=0;i<p.length;i++){
+    const a=p[i], b=p[(i+1)%p.length], mx=((a[0]+b[0])/2).toFixed(1), my=((a[1]+b[1])/2).toFixed(1);
+    d+=` Q ${a[0].toFixed(1)} ${a[1].toFixed(1)} ${mx} ${my}`;
+  }
+  return d+" Z";
+}
+function mountain(x,y,s,rng){
+  return `<path d="M ${x-s} ${y+s*0.62} L ${x-s*0.25} ${y-s*0.55} L ${x+s*0.12} ${y-s*0.1} L ${x+s*0.42} ${y-s*0.75} L ${x+s} ${y+s*0.62} Z" fill="#9aa7ad" stroke="#77858c" stroke-width="2.5"/>
+  <path d="M ${x+s*0.24} ${y-s*0.48} L ${x+s*0.42} ${y-s*0.75} L ${x+s*0.6} ${y-s*0.45} L ${x+s*0.48} ${y-s*0.38} L ${x+s*0.36} ${y-s*0.45} Z" fill="#f2f5f6"/>
+  <text x="${x+s*0.42}" y="${y-s*0.88}" text-anchor="middle" font-size="10" fill="#5c6b74" font-style="italic">“BEHOLD!”</text>`;
+}
+function tree(x,y,s,rng){
+  const g=rng()>0.5?"#4c9a6a":"#5fae79";
+  return `<rect x="${x-1.8}" y="${y}" width="3.6" height="${s*0.8}" fill="#8a6b45"/>
+  <circle cx="${x}" cy="${y-s*0.35}" r="${s*0.75}" fill="${g}"/>
+  <circle cx="${x-s*0.5}" cy="${y-s*0.05}" r="${s*0.5}" fill="${g}"/>
+  <circle cx="${x+s*0.5}" cy="${y-s*0.05}" r="${s*0.5}" fill="${g}"/>`;
+}
+function cave(x,y){
+  return `<path d="M ${x-30} ${y+26} Q ${x-30} ${y-12} ${x} ${y-14} Q ${x+30} ${y-12} ${x+30} ${y+26} Z" fill="#6f7d86" stroke="#57646c" stroke-width="2.5"/>
+  <path d="M ${x-14} ${y+26} Q ${x-14} ${y+2} ${x} ${y+1} Q ${x+14} ${y+2} ${x+14} ${y+26} Z" fill="#2d3b45"/>
+  <circle cx="${x}" cy="${y+13}" r="2.6" fill="#ffd76e"><animate attributeName="opacity" values="1;.25;1" dur="2.4s" repeatCount="indefinite"/></circle>
+  <text x="${x}" y="${y-22}" text-anchor="middle" font-size="9.5" fill="#5c6b74" font-style="italic">(does not eat people)</text>`;
+}
+function library(x,y){
+  return `<rect x="${x-13}" y="${y-38}" width="26" height="52" rx="4" fill="#d9825f" stroke="#a85f42" stroke-width="2"/>
+  <rect x="${x-9}" y="${y-30}" width="8" height="9" rx="2" fill="#ffe9a8"/>
+  <rect x="${x+2}" y="${y-30}" width="8" height="9" rx="2" fill="#ffe9a8"/>
+  <rect x="${x-9}" y="${y-15}" width="19" height="9" rx="2" fill="#ffe9a8"/>
+  <path d="M ${x-17} ${y-38} L ${x} ${y-54} L ${x+17} ${y-38} Z" fill="#8a6b45"/>
+  <circle cx="${x}" cy="${y-46}" r="4" fill="#ffd76e"><animate attributeName="opacity" values="1;.4;1" dur="3s" repeatCount="indefinite"/></circle>
+  <text x="${x}" y="${y+26}" text-anchor="middle" font-size="9.5" fill="#5c6b74" font-style="italic">THE THREAD</text>`;
+}
+function sprout(x,y){
+  return `<path d="M ${x} ${y} q -1 -7 -6 -9 M ${x} ${y} q 1 -7 6 -9 M ${x} ${y} l 0 -11" stroke="#3e8757" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+}
+
+start();
+</script>
+</body>
+</html>
