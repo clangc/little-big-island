@@ -161,6 +161,31 @@
   footer{background:#0e2438; color:#8fabb3; text-align:center; padding:46px 22px; font-size:13.5px; line-height:1.9;}
   footer .fbrand{font-family:var(--serif); color:#dce8ea; font-size:17px; margin-bottom:6px;}
   footer a{color:var(--teal-lo);}
+
+  /* hero island de-fuzz + treasure ignition */
+  .island-art{filter:blur(calc((1 - var(--focus,1))*14px)) saturate(calc(.5 + var(--focus,1)*.65));transition:filter .18s linear;}
+  .htg{opacity:.14;transition:opacity .55s ease;}
+  .htg.lit{opacity:1;}
+  .focushint{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:#9fc0c6;font-size:11.5px;letter-spacing:1.8px;text-transform:uppercase;transition:opacity .3s;z-index:3;}
+  /* pull-quote (Bianca's voice) */
+  .pull{background:#0e2438;color:#eaf4f2;text-align:center;padding:64px 22px;}
+  .pull p{font-family:var(--serif);font-style:italic;font-size:clamp(20px,3vw,30px);line-height:1.42;max-width:780px;margin:0 auto 16px;color:#fdf8ec;}
+  .pull .src{color:#8fb3bb;font-size:12.5px;letter-spacing:1.8px;text-transform:uppercase;}
+  /* FAQ */
+  .faq{max-width:760px;margin:34px auto 0;}
+  .faq details{background:var(--cream);border:1px solid #ece0c6;border-radius:14px;padding:2px 22px;margin-bottom:12px;box-shadow:0 6px 16px var(--shadow);}
+  .faq summary{font-family:var(--serif);font-weight:600;color:var(--deep);font-size:17.5px;padding:17px 0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::after{content:"+";color:var(--teal);font-size:24px;font-weight:400;flex-shrink:0;}
+  .faq details[open] summary::after{content:"\2013";}
+  .faq p{color:#4a5a66;font-size:15px;padding:0 0 18px;line-height:1.62;margin:0;}
+  /* free chapter */
+  .chapter{background:radial-gradient(120% 100% at 50% 0%,#fffdf7,var(--paper));text-align:center;}
+  .chapbox{max-width:560px;margin:0 auto;background:var(--cream);border:1px solid #ece0c6;border-radius:22px;padding:36px 34px;box-shadow:0 16px 40px var(--shadow);}
+  .chapbox .lead2{font-family:var(--serif);font-size:20px;color:var(--deep);}
+  .chapbox .form{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center;}
+  .chapbox input{flex:1;min-width:210px;padding:14px 16px;border:1.5px solid #d9cba6;border-radius:99px;font-family:var(--sans);font-size:15px;background:#fff;}
+  .chapbox .btn-primary{white-space:nowrap;font-size:16px;padding:14px 24px;}
 </style>
 </head>
 <body>
@@ -190,7 +215,7 @@
     </div>
   </div>
 
-  <div class="island-art floaty" aria-hidden="true">
+  <div class="island-art floaty" id="heroIsland" aria-hidden="true">
     <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="260" cy="300" rx="150" ry="26" fill="#0c2030" opacity=".5"/>
       <g class="cloud" opacity=".85"><ellipse cx="120" cy="70" rx="34" ry="15" fill="#eaf4f2"/><ellipse cx="150" cy="76" rx="26" ry="12" fill="#eaf4f2"/></g>
@@ -210,15 +235,28 @@
       <!-- cave -->
       <path d="M250 250 Q250 230 268 230 Q286 230 286 250 Z" fill="#4a5860"/>
       <!-- spark -->
-      <circle class="spark-glow" cx="268" cy="240" r="7" fill="#ffe08a"/>
+      <circle class="spark-glow htg lit" cx="268" cy="240" r="7" fill="#ffe08a"/>
       <circle cx="268" cy="240" r="3.5" fill="#fff6d8"/>
+      <!-- treasures ignite as the island comes into focus -->
+      <circle class="htg" cx="185" cy="210" r="5.5" fill="#7fd8c0"/>
+      <circle class="htg" cx="238" cy="226" r="5.5" fill="#bcd2ff"/>
+      <circle class="htg" cx="300" cy="244" r="5.5" fill="#9fe0a6"/>
+      <circle class="htg" cx="352" cy="170" r="5.5" fill="#ffd3a6"/>
+      <circle class="htg" cx="150" cy="232" r="5.5" fill="#c9b4ff"/>
       <!-- sign -->
       <g transform="translate(148,244) rotate(-7)"><rect x="-2" y="0" width="5" height="20" fill="#8a6b3f"/><rect x="-20" y="-14" width="40" height="16" rx="3" fill="#c8a668" stroke="#8a6b3f" stroke-width="1.5"/><line x1="-14" y1="-8" x2="14" y2="-8" stroke="#7a5a2f" stroke-width="1.4"/><line x1="-14" y1="-3" x2="8" y2="-3" stroke="#7a5a2f" stroke-width="1.4"/></g>
     </svg>
   </div>
 
+  <div class="focushint" id="focushint">Scroll — it clears when the island sees you</div>
+
   <svg class="wave" viewBox="0 0 1440 70" preserveAspectRatio="none" style="position:absolute;bottom:-1px;left:0"><path d="M0 40 Q360 5 720 40 T1440 40 V70 H0Z" fill="#fbf6ec"/></svg>
 </header>
+
+<section class="pull"><div>
+  <p class="reveal">“There is a saying about riches over a rainbow. Cute. Also slippery. Nobody climbs rainbows. Ask the unicorns — occupational hazard.”</p>
+  <div class="src reveal">— the opening lines, written by Bianca, age 12</div>
+</div></section>
 
 <section id="how"><div class="band">
   <div class="kicker reveal">How it works</div>
@@ -291,9 +329,35 @@
   </div>
 </div></section>
 
+<section><div class="band">
+  <div class="kicker reveal">Straight answers</div>
+  <h2 class="title serif reveal">Questions parents actually ask</h2>
+  <div class="faq">
+    <details class="reveal"><summary>Is my child safe from strangers?</summary><p>Completely. There is no open chat, no DMs, and no way for a stranger to reach your child — ever. Friends only connect when <em>both</em> parents approve. Safety here isn’t a setting you switch on; it’s the way the whole thing is built.</p></details>
+    <details class="reveal"><summary>Wait — isn’t this just more screen time?</summary><p>It’s the opposite, on purpose. Every session ends by sending your kid <em>off</em> the screen to do something real, and their island only grows once you confirm they did it. The app is the nudge. Real life is the game.</p></details>
+    <details class="reveal"><summary>What do I pay — and can my kid spend money?</summary><p>$10 today holds your Founding Family spot and is credited to your first year (refundable anytime, no questions). Founding families lock $49/year for life. Kids can never spend a cent — treasure coins are earned by real-world quests only. No loot boxes, nothing to buy.</p></details>
+    <details class="reveal"><summary>When does it launch?</summary><p>This fall. Founding families get first access — and a hand in shaping it.</p></details>
+    <details class="reveal"><summary>Who’s behind it?</summary><p>A dad and his 12-year-old daughter, Bianca, who wrote the story it all grew from. We’re building the thing we wanted for our own family.</p></details>
+  </div>
+</div></section>
+
+<section class="chapter"><div class="band">
+  <div class="kicker reveal">Meet the world first</div>
+  <h2 class="title serif reveal">Read Chapter One — free</h2>
+  <p class="subtitle reveal">A cave that says it eats people. A spark in the dark. A guide who is a “professional guide, amateur disaster.” Your kid will beg for Chapter Two.</p>
+  <div class="chapbox reveal">
+    <div class="lead2">We’ll send the first chapter straight to your inbox.</div>
+    <div class="form">
+      <input id="chapEmail" type="email" placeholder="your email" aria-label="your email">
+      <button class="btn-primary" onclick="return chapter()">Send me Chapter One</button>
+    </div>
+    <div style="font-size:12.5px;color:#7a8890;margin-top:12px;">No spam — just a story, and the occasional note from the family building this.</div>
+  </div>
+</div></section>
+
 <div class="quizbar">
   Not ready to commit? <a href="/island-finder">Find your kid's island — free →</a>
-  <div class="small">A 2-minute quiz. No signup. Just to see the magic.</div>
+  <div class="small">A 2-minute quiz, no signup — then share it. Every kid’s island comes out different.</div>
 </div>
 
 <footer>
@@ -321,6 +385,26 @@ function deposit(el){
     return false;
   }
   return true;
+}
+// hero island de-fuzz + treasure ignition on scroll
+const heroIsland=document.getElementById('heroIsland');
+const glints=[...document.querySelectorAll('.htg:not(.spark-glow)')];
+const focushint=document.getElementById('focushint');
+function heroFocus(){
+  const f=Math.min(1, scrollY/(innerHeight*0.6));
+  if(heroIsland) heroIsland.style.setProperty('--focus', f.toFixed(3));
+  const n=Math.round(f*glints.length);
+  glints.forEach((g,i)=>g.classList.toggle('lit', i<n));
+  if(focushint) focushint.style.opacity=(1-Math.min(1,f*1.6)).toFixed(2);
+}
+addEventListener('scroll',()=>requestAnimationFrame(heroFocus),{passive:true});
+heroFocus();
+// free chapter capture (email fallback until a real form is wired)
+function chapter(){
+  const e=(document.getElementById('chapEmail')||{}).value||'';
+  if(e.indexOf('@')>0){location.href='mailto:hello@thelittlebigisland.com?subject=Send%20me%20Chapter%20One&body='+encodeURIComponent('Please send Chapter One to: '+e);}
+  else{alert('Pop your email in first and we\'ll send Chapter One right over!');}
+  return false;
 }
 </script>
 </body>
