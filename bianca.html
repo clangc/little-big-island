@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e2438">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Grow Your Island — The Little Big Island</title>
+<style>
+  :root{
+    --ink:#20303a; --paper:#fbf6ec; --cream:#fffdf7; --deep:#123047;
+    --teal:#2f7f92; --green:#2a7d5f; --gold:#d6a327; --gold-lo:#f0c85a; --coral:#e0784a;
+    --serif:Georgia,'Times New Roman',serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:linear-gradient(180deg,#0e2438,#1d5568 60%,#2c7f92);min-height:100vh;}
+  .wrap{max-width:1060px;margin:0 auto;padding:22px 14px 40px;}
+  .top{text-align:center;color:#eaf4f2;margin-bottom:14px;}
+  .top h1{font-family:var(--serif);font-weight:600;font-size:clamp(24px,4vw,36px);color:#fdf8ec;}
+  .top .sub{color:#9fc0c6;font-size:14px;font-style:italic;margin-top:4px;}
+
+  /* ---------- genesis ---------- */
+  #genesis{max-width:560px;margin:8vh auto 0;background:var(--cream);border-radius:20px;padding:34px 32px;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;}
+  #genesis .k{color:var(--coral);font-size:12px;letter-spacing:2.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;}
+  #genesis h2{font-family:var(--serif);color:var(--deep);font-size:24px;margin-bottom:6px;}
+  #genesis p{color:#5c6f78;font-size:15px;margin-bottom:18px;line-height:1.55;}
+  .gq{display:none;}
+  .gq.on{display:block;}
+  .gopt{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;background:#fbf7ec;border:2px solid #eadfc4;color:var(--ink);font-size:15.5px;padding:13px 15px;border-radius:12px;margin-top:10px;transition:.15s;}
+  .gopt:hover{border-color:var(--teal);background:#f2f8f4;transform:translateX(3px);}
+
+  /* ---------- builder ---------- */
+  #builder{display:none;}
+  .stagegrid{display:grid;grid-template-columns:1fr 280px;gap:14px;}
+  @media(max-width:860px){.stagegrid{grid-template-columns:1fr;}}
+  .islandcard{background:linear-gradient(180deg,#143a54,#235d6e);border-radius:18px;padding:10px;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative;}
+  #sea{width:100%;height:auto;display:block;border-radius:12px;cursor:pointer;}
+  .hinttip{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;background:rgba(9,26,40,.75);color:#dce8ea;font-size:12.5px;padding:7px 14px;border-radius:99px;pointer-events:none;transition:opacity .3s;max-width:88%;text-align:center;}
+
+  .side{display:flex;flex-direction:column;gap:12px;}
+  .panel{background:var(--cream);border-radius:16px;padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.22);}
+  .panel h3{font-family:var(--serif);color:var(--deep);font-size:16px;margin-bottom:10px;}
+  .pieces{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .pc{border:2px solid #eadfc4;border-radius:12px;background:#fbf7ec;padding:7px 4px 5px;cursor:pointer;text-align:center;transition:.12s;}
+  .pc:hover{transform:translateY(-2px);border-color:var(--teal);}
+  .pc.sel{border-color:var(--gold);background:#fff8e3;box-shadow:0 4px 12px rgba(214,163,39,.3);}
+  .pc svg{width:34px;height:30px;display:block;margin:0 auto;}
+  .pc .nm{font-size:9.5px;color:#5c6f78;margin-top:3px;line-height:1.1;}
+  .tbadge{font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:99px;padding:1px 6px;display:inline-block;margin-top:3px;}
+
+  #portrait{font-size:14px;color:#3a4a52;line-height:1.6;}
+  #portrait .lead{font-family:var(--serif);font-style:italic;color:var(--deep);font-size:15.5px;}
+  #portrait .scar{display:block;margin-top:7px;font-size:12.5px;color:#a8842a;font-style:italic;}
+  .meterrow{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:11.5px;color:#5c6f78;}
+  .meterrow .bar{flex:1;height:7px;border-radius:99px;background:#efe7d2;overflow:hidden;}
+  .meterrow .fill{height:100%;border-radius:99px;transition:width .4s ease;}
+
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{flex:1;font-family:inherit;font-weight:700;font-size:13.5px;border:none;border-radius:99px;padding:11px 10px;cursor:pointer;transition:.15s;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn.gold{background:linear-gradient(180deg,var(--gold-lo),var(--gold));color:#20303a;}
+  .btn.ghost{background:transparent;border:2px solid #cfe0dd;color:#eaf4f2;}
+  .note{font-size:11px;color:#9fc0c6;text-align:center;font-style:italic;margin-top:10px;}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:#123047;color:#fdf8ec;padding:12px 22px;border-radius:99px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.4);transition:transform .35s;z-index:50;max-width:92vw;text-align:center;}
+  #toast.show{transform:translateX(-50%) translateY(0);}
+
+  /* mobile */
+  html{touch-action:manipulation;}
+  @media(max-width:560px){
+    .wrap{padding:14px 8px 30px;}
+    .top h1{font-size:22px;}
+    .top .sub{font-size:12px;}
+    #genesis{margin-top:3vh;padding:26px 20px;}
+    .gopt{font-size:15px;padding:14px 14px;}
+    .pieces{grid-template-columns:repeat(4,1fr);gap:7px;}
+    .pc{padding:9px 3px 7px;}
+    .pc svg{width:38px;height:32px;}
+    .btn{padding:14px 10px;font-size:14.5px;}
+    .hinttip{font-size:11.5px;bottom:10px;}
+  }
+  /* guide */
+  #guidebtn{position:absolute;top:16px;right:16px;z-index:5;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(253,248,236,.92);color:#123047;font-weight:800;font-size:18px;font-family:var(--serif);box-shadow:0 6px 16px rgba(0,0,0,.3);}
+  #guidemask{display:none;position:fixed;inset:0;background:rgba(9,26,40,.78);z-index:70;align-items:center;justify-content:center;padding:16px;overflow:auto;}
+  #guidemask.on{display:flex;}
+  .guidebox{max-width:470px;background:var(--cream);border-radius:22px;padding:28px 26px;box-shadow:0 30px 80px rgba(0,0,0,.5);max-height:92vh;overflow:auto;}
+  .guidebox .k{color:var(--coral);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;text-align:center;margin-bottom:8px;}
+  .guidebox h3{font-family:var(--serif);color:var(--deep);font-size:22px;text-align:center;margin-bottom:14px;}
+  .grule{display:flex;gap:11px;align-items:flex-start;margin-bottom:11px;}
+  .grule .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#e8f2ee;color:#2a7d5f;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .grule p{font-size:14px;color:#3a4a52;line-height:1.5;}
+  .grule b{color:var(--deep);}
+  .gps{margin-top:14px;padding:12px 14px;background:#fff8e3;border-radius:12px;font-size:13px;color:#8a6b2a;font-style:italic;line-height:1.5;}
+  .guidebox .btn{width:100%;margin-top:16px;}
+
+  /* legendary / mystery / dare */
+  .bob{animation:bob 2.2s ease-in-out infinite;transform-origin:center;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  #daremask{display:none;position:fixed;inset:0;background:rgba(9,26,40,.72);z-index:60;align-items:center;justify-content:center;padding:18px;}
+  #daremask.on{display:flex;}
+  .darebox{max-width:430px;background:var(--cream);border-radius:20px;padding:30px 28px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+  .darebox .k{color:var(--coral);font-size:11.5px;letter-spacing:2.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px;}
+  .darebox h3{font-family:var(--serif);color:var(--deep);font-size:21px;margin-bottom:8px;}
+  .darebox p{color:#5c6f78;font-size:15px;line-height:1.6;margin-bottom:18px;}
+  .darebox .btn{width:100%;margin-top:8px;}
+  .darebox .btn.plain{background:#eee5d0;color:#5c6f78;}
+
+  /* storm */
+  .shake{animation:shake .5s ease-in-out 3;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .broken-piece{cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Grow Your Island</h1>
+    <div class="sub">It's not land. It's a mirror. And it will test you. — The Little Big Island</div>
+  </div>
+
+  <!-- ============ GENESIS ============ -->
+  <div id="genesis">
+    <div class="k">House rule</div>
+    <h2>You don't get a blank island.</h2>
+    <p>Nobody does. The island appears once it sees you — so let it look. Three questions.</p>
+
+    <div class="gq on" data-q="0">
+      <p style="font-family:var(--serif);color:var(--deep);font-size:17px;">A cave says it eats people. You:</p>
+      <button class="gopt" onclick="gAns(0,'brave')">Walk in. Snacks don't eat snacks.</button>
+      <button class="gopt" onclick="gAns(0,'joy')">Ask if it's tried snacks instead of people.</button>
+      <button class="gopt" onclick="gAns(0,'kind')">Grab a friend's hand and go in together.</button>
+    </div>
+    <div class="gq" data-q="1">
+      <p style="font-family:var(--serif);color:var(--deep);font-size:17px;">Your perfect afternoon is:</p>
+      <button class="gopt" onclick="gAns(1,'dream')">Imagining twelve impossible things before dinner.</button>
+      <button class="gopt" onclick="gAns(1,'grow')">Making something small and stubborn grow.</button>
+      <button class="gopt" onclick="gAns(1,'climb')">Getting to the top of anything tall.</button>
+    </div>
+    <div class="gq" data-q="2">
+      <p style="font-family:var(--serif);color:var(--deep);font-size:17px;">When it storms, you:</p>
+      <button class="gopt" onclick="gAns(2,'duet')">Duet with the thunder.</button>
+      <button class="gopt" onclick="gAns(2,'shelter')">Build the shelter and count heads. Twice.</button>
+      <button class="gopt" onclick="gAns(2,'watch')">Watch from the edge — you want to see it lose.</button>
+    </div>
+  </div>
+
+  <!-- ============ BUILDER ============ -->
+  <div id="builder">
+    <div class="stagegrid">
+      <div class="islandcard" id="card">
+        <svg id="sea" viewBox="0 0 680 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1c4b63"/><stop offset="1" stop-color="#2c7f92"/>
+            </linearGradient>
+          </defs>
+          <rect width="680" height="460" fill="url(#seaG)"/>
+          <g id="stars"></g>
+          <ellipse cx="340" cy="330" rx="290" ry="62" fill="none" stroke="#7fc0cc" stroke-width="2" opacity=".25"/>
+          <g id="rings"></g><!-- expansion rings go behind the isle -->
+          <!-- island base -->
+          <path id="isle" d="M120 330 Q128 262 210 256 Q252 212 330 232 Q394 200 460 228 Q548 226 560 288 Q604 306 578 338 Q520 382 340 388 Q160 382 132 348 Q104 340 120 330Z" fill="#e7d4a0" stroke="#cdb277" stroke-width="3"/>
+          <path id="grass" d="M180 306 Q212 268 280 268 Q330 240 396 258 Q460 248 496 282 Q536 290 528 312 Q460 344 340 342 Q212 340 196 322 Q168 314 180 306Z" fill="#63b37f"/>
+          <g id="placed"></g>
+          <g id="wonder"></g>
+          <g id="storm" style="pointer-events:none"></g>
+        </svg>
+        <button id="guidebtn" onclick="openGuide()" aria-label="How it works">?</button>
+        <div class="hinttip" id="tip">Pick a piece → tap the island to plant it</div>
+      </div>
+
+      <div class="side">
+        <div class="panel">
+          <h3>Treasure pieces <span style="font-weight:400;color:#8a8270;font-size:11px;">(everything means something)</span></h3>
+          <div class="pieces" id="palette"></div>
+        </div>
+        <div class="panel">
+          <h3>Your island says…</h3>
+          <div id="portrait"><span class="lead">Nothing yet. Islands are patient.</span></div>
+          <div id="meters"></div>
+        </div>
+        <div class="actions">
+          <button class="btn gold" onclick="shareIsland()">Share my island</button>
+          <button class="btn ghost" onclick="undo()">Undo</button>
+        </div>
+        <div class="note">One island per person. It grows when you're tested — and where it breaks, it mends in gold.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="guidemask">
+  <div class="guidebox">
+    <div class="k">Field guide</div>
+    <h3>How your island works</h3>
+    <div class="grule"><div class="n">1</div><p><b>No blank islands.</b> It appears once it sees you — three questions, and the first pieces it plants are yours forever. No take-backs. The island keeps its first memories of you.</p></div>
+    <div class="grule"><div class="n">2</div><p><b>Every piece means something.</b> Groves are generosity, watchfires are courage, kites are imagination. Plant things, and the island reads you back: <i>"you are growing joyful, with a streak of brave."</i> It's a mirror, not a sandbox.</p></div>
+    <div class="grule"><div class="n">3</div><p><b>Storms come.</b> Around every six pieces, the island tests you — the sky darkens and something breaks. Tap the gray pieces to mend them. They come back <b>veined with gold</b>, and gold counts double. Where it broke is where it shines.</p></div>
+    <div class="grule"><div class="n">4</div><p><b>Surviving storms grows the island.</b> New land rises after every one. That's the only way it expands — no storm, no territory.</p></div>
+    <div class="grule"><div class="n">5</div><p><b>Glowing things are dares.</b> After a storm, something mysterious washes ashore. It only opens for a REAL-world deed — a real laugh, a real brave thing. Do it, come back, tap it… and what hatches is <b>alive</b>. You can't tap your way to those.</p></div>
+    <div class="grule"><div class="n">6</div><p><b>Share = introduce yourself.</b> The share button copies a link that IS your island. No scores, no leaderboards. Showing someone your island means showing them you.</p></div>
+    <div class="gps">P.S. — Bianca: every word in here is a placeholder wearing your voice like a costume. You're the head writer. The island says what YOU decide it says.</div>
+    <button class="btn gold" onclick="closeGuide()">Got it — let it see me</button>
+  </div>
+</div>
+<div id="daremask">
+  <div class="darebox">
+    <div class="k">The island found something</div>
+    <h3 id="dareTitle">It's humming.</h3>
+    <p id="dareText">Whatever is inside only opens for someone who <b>made somebody laugh today</b>. Not a screen laugh. A real one. Go. Come back.</p>
+    <button class="btn gold" onclick="claimDare()">I did it — for real</button>
+    <button class="btn plain" onclick="closeDare()">Not yet — I'll go do it</button>
+  </div>
+</div>
+<div id="toast">Link copied — that's you, in island form.</div>
+
+<script>
+"use strict";
+/* THE MIRROR RULES + THE TRIAL RULES
+   1. Genesis: the island appears by seeing you (never blank).
+   2. Every piece belongs to a treasure — the island is a self-portrait.
+   3. One island; it grows. Expansion is EARNED through trials, never bought.
+   4. Adversity flows world→you (storms test you); you never destroy for fun.
+   5. Kintsugi: what breaks and is mended comes back veined with gold.
+   6. Share = introduction. No scores, no leaderboards.                      */
+
+const TREASURES = {
+  seed:  {name:'Seed',  color:'#2a7d5f', bg:'#e2f3e9', says:'generous'},
+  horn:  {name:'Horn',  color:'#e0784a', bg:'#fdeadf', says:'joyful'},
+  spark: {name:'Spark', color:'#d6a327', bg:'#fdf3d3', says:'hopeful'},
+  note:  {name:'Note',  color:'#5a7fd6', bg:'#e6ecfb', says:'imaginative'},
+  wing:  {name:'Wing',  color:'#8a6bb5', bg:'#efe8f8', says:'confident'},
+  shield:{name:'Shield',color:'#5c8791', bg:'#e4eff1', says:'brave'},
+  thread:{name:'Thread',color:'#b8860b', bg:'#f7ecd0', says:'steadfast'},
+};
+
+const PIECES = [
+  {id:'tree',   t:'seed',  nm:'Grove',     svg:'<rect x="15" y="18" width="4" height="9" fill="#7a5a30"/><circle cx="17" cy="14" r="8" fill="#3f9463"/><circle cx="10" cy="18" r="5" fill="#48a06e"/><circle cx="24" cy="18" r="5" fill="#48a06e"/>'},
+  {id:'garden', t:'seed',  nm:'Garden',    svg:'<ellipse cx="17" cy="22" rx="12" ry="5" fill="#8fbf7f"/><path d="M9 21 q0-6 3-7 M15 22 q0-8 2-9 M22 21 q0-6 3-7" stroke="#2a7d5f" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="12" cy="14" r="1.8" fill="#e0784a"/><circle cx="17" cy="12" r="1.8" fill="#f0c85a"/><circle cx="25" cy="14" r="1.8" fill="#d66"/>'},
+  {id:'stage',  t:'horn',  nm:'Boogie stage', svg:'<rect x="7" y="16" width="20" height="9" rx="2" fill="#d9825f"/><path d="M7 16 L17 8 L27 16 Z" fill="#8a6b45"/><circle cx="17" cy="20" r="2.2" fill="#ffd76e"/>'},
+  {id:'bird',   t:'horn',  nm:'Boogie bird', svg:'<ellipse cx="17" cy="17" rx="7" ry="6" fill="#e0784a"/><circle cx="23" cy="13" r="3.5" fill="#e0784a"/><circle cx="24.4" cy="12.4" r="1" fill="#20303a"/><path d="M25.8 14 l4 1 -4 1z" fill="#f0c85a"/><path d="M10 17 q-4 -2 -5 -6 q4 0 7 3" fill="#c95f33"/><path d="M14 23 l-1 4 M20 23 l1 4" stroke="#8a5a2f" stroke-width="1.6"/>'},
+  {id:'lantern',t:'spark', nm:'Lantern',   svg:'<rect x="15.5" y="8" width="3" height="4" fill="#8a6b45"/><rect x="11" y="12" width="12" height="12" rx="3" fill="#f7e9b8" stroke="#d6a327" stroke-width="1.6"/><circle cx="17" cy="18" r="3" fill="#ffd76e"/><rect x="13" y="24" width="8" height="2.4" rx="1" fill="#8a6b45"/>'},
+  {id:'cavelight',t:'spark',nm:'Glow cave', svg:'<path d="M6 26 Q6 12 17 12 Q28 12 28 26 Z" fill="#4a5860"/><path d="M12 26 Q12 18 17 18 Q22 18 22 26 Z" fill="#2d3b45"/><circle cx="17" cy="23" r="2" fill="#ffd76e"/>'},
+  {id:'kite',   t:'note',  nm:'Kite',      svg:'<path d="M17 6 L24 14 L17 22 L10 14 Z" fill="#5a7fd6"/><path d="M17 6 L17 22 M10 14 L24 14" stroke="#e6ecfb" stroke-width="1.2"/><path d="M17 22 q-2 4 1 6 q-3 1 -2 4" stroke="#5a7fd6" stroke-width="1.3" fill="none"/>'},
+  {id:'scope',  t:'note',  nm:'Star scope', svg:'<rect x="14" y="14" width="6" height="13" fill="#8a6b45"/><rect x="9" y="7" width="16" height="7" rx="3" transform="rotate(-24 17 10)" fill="#5a7fd6"/><circle cx="25" cy="6" r="1.4" fill="#f0c85a"/>'},
+  {id:'peak',   t:'wing',  nm:'High peak', svg:'<path d="M4 26 L14 8 L20 17 L25 10 L31 26 Z" fill="#8ea0a6"/><path d="M22 14 L25 10 L28 15 L25 17 Z" fill="#f4f7f8"/>'},
+  {id:'lookout',t:'wing',  nm:'Lookout',   svg:'<rect x="13" y="10" width="8" height="16" fill="#c8a668" stroke="#8a6b45" stroke-width="1.4"/><path d="M11 10 L17 5 L23 10 Z" fill="#8a6b45"/><rect x="15.5" y="13" width="3" height="3" fill="#eaf4f2"/><path d="M23 7 l5 -1 -1 3z" fill="#e0784a"/>'},
+  {id:'stone',  t:'shield',nm:'Stand-stone', svg:'<path d="M12 26 L13 10 Q17 7 21 10 L22 26 Z" fill="#7d8f96" stroke="#5c6d74" stroke-width="1.4"/><path d="M15 15 l4 0 M15 19 l4 0" stroke="#5c6d74" stroke-width="1.3"/>'},
+  {id:'watchfire',t:'shield',nm:'Watchfire', svg:'<path d="M10 25 h14 l-2 3 h-10 z" fill="#8a6b45"/><path d="M17 10 q4 5 2 9 q4 -1 3 3 q-2 4 -5 4 q-5 -1 -5 -6 q0 -5 5 -10z" fill="#e0784a"/><path d="M17 15 q2 3 0 7 q-2 -1 -2 -4 q0 -2 2 -3z" fill="#ffd76e"/>'},
+  {id:'library',t:'thread',nm:'The Thread', svg:'<rect x="11" y="11" width="12" height="15" rx="2" fill="#d9825f" stroke="#a85f42" stroke-width="1.4"/><path d="M8 11 L17 4 L26 11 Z" fill="#8a6b45"/><rect x="14" y="15" width="6" height="4" rx="1" fill="#ffe9a8"/><circle cx="17" cy="8" r="1.6" fill="#ffd76e"/>'},
+  {id:'goldpath',t:'thread',nm:'Gold path', svg:'<path d="M6 24 Q14 18 17 12 Q20 18 28 24" stroke="#d6a327" stroke-width="3" fill="none" stroke-dasharray="1 5" stroke-linecap="round"/>'},
+];
+
+/* ---------- state ---------- */
+let genesis = [];
+let placed = [];              // {id,x,y,gold:0|1,broken:0|1}
+let selected = null;
+let expansions = 0;           // earned land rings
+let sincePlace = 0;           // user placements since last trial
+let stormActive = false;
+const TRIAL_EVERY = 6;
+let RX = 225, RY = 62;        // land bounds (grow with expansions)
+let mystery = 0;              // 0 none, 1 teased (egg waiting), 2 claimed
+let wonders = 0;              // legendaries earned by real-world dares
+
+/* ---------- genesis ---------- */
+function gAns(q, val){
+  genesis[q] = val;
+  const next = document.querySelector('.gq[data-q="'+(q+1)+'"]');
+  document.querySelector('.gq[data-q="'+q+'"]').classList.remove('on');
+  if(next){ next.classList.add('on'); }
+  else beginIsland();
+}
+function openGuide(){ document.getElementById('guidemask').classList.add('on'); }
+function closeGuide(){ document.getElementById('guidemask').classList.remove('on'); }
+function beginIsland(){
+  document.getElementById('genesis').style.display='none';
+  document.getElementById('builder').style.display='block';
+  const seedMap = {brave:'stone', joy:'bird', kind:'tree', dream:'kite', grow:'garden', climb:'peak', duet:'stage', shelter:'lantern', watch:'lookout'};
+  genesis.forEach((g,i)=>{
+    const pid = seedMap[g];
+    if(pid) addPiece(pid, 230+i*90+jit(20), 295+jit(18));
+  });
+  renderPortrait(); save();
+  setTimeout(openGuide, 700);   // first-time field guide
+}
+function jit(n){ return (Math.random()*2-1)*n; }
+
+/* ---------- palette ---------- */
+const pal = document.getElementById('palette');
+PIECES.forEach(p=>{
+  const t = TREASURES[p.t];
+  const el = document.createElement('div');
+  el.className='pc'; el.id='pc-'+p.id;
+  el.innerHTML = '<svg viewBox="0 0 34 30">'+p.svg+'</svg><div class="nm">'+p.nm+'</div>'+
+    '<span class="tbadge" style="background:'+t.bg+';color:'+t.color+'">'+t.name+'</span>';
+  el.onclick = ()=>{ select(p.id); };
+  pal.appendChild(el);
+});
+function select(id){
+  selected = (selected===id)? null : id;
+  document.querySelectorAll('.pc').forEach(e=>e.classList.remove('sel'));
+  if(selected) document.getElementById('pc-'+id).classList.add('sel');
+  setTip();
+}
+function setTip(msg){
+  const tip = document.getElementById('tip');
+  if(msg){ tip.textContent = msg; return; }
+  if(anyBroken()) tip.textContent = 'The storm broke something. Tap the gray pieces to mend them.';
+  else if(selected) tip.textContent = 'Now tap the island to plant it';
+  else tip.textContent = 'Pick a piece → tap the island to plant it';
+}
+
+/* ---------- placing ---------- */
+const sea = document.getElementById('sea');
+const placedG = document.getElementById('placed');
+function svgPoint(evt){
+  const pt = sea.createSVGPoint();
+  const e = evt.touches ? evt.touches[0] : evt;
+  pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(sea.getScreenCTM().inverse());
+}
+function onIsland(x,y){
+  const dx=(x-340)/RX, dy=(y-310)/RY;
+  return dx*dx+dy*dy <= 1;
+}
+sea.addEventListener('click', evt=>{
+  if(stormActive) return;
+  // mend takes priority: clicking a broken piece repairs it
+  const t = evt.target.closest('.broken-piece');
+  if(t){ mend(parseInt(t.dataset.idx)); return; }
+  if(!selected) return;
+  const p = svgPoint(evt);
+  if(!onIsland(p.x,p.y)){ toast("The sea isn't yours to build on. Yet."); return; }
+  addPiece(selected, p.x, p.y);
+  sincePlace++;
+  renderPortrait(); save();
+  if(sincePlace >= TRIAL_EVERY && !anyBroken()) trial();
+});
+function addPiece(id, x, y, gold, broken){
+  const piece = PIECES.find(p=>p.id===id); if(!piece) return;
+  placed.push({id, x:Math.round(x), y:Math.round(y), gold:gold?1:0, broken:broken?1:0});
+  drawAll();
+}
+function drawAll(){
+  placedG.innerHTML='';
+  placed.forEach((pl,idx)=>{
+    const piece = PIECES.find(p=>p.id===pl.id);
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const s = 1.35;
+    g.setAttribute('transform','translate('+(pl.x-17*s)+','+(pl.y-26*s)+') scale('+s+')');
+    let inner = '';
+    if(pl.gold) inner += '<circle cx="17" cy="18" r="15" fill="#f0c85a" opacity=".35"/><path d="M6 25 Q12 20 17 24 Q23 19 28 25" stroke="#d6a327" stroke-width="1.6" fill="none" opacity=".9"/>';
+    inner += piece.svg;
+    if(pl.broken){
+      inner += '<path d="M9 8 L14 15 L11 19 L16 26" stroke="#3a4a52" stroke-width="1.6" fill="none" opacity=".85"/>';
+      g.setAttribute('class','broken-piece');
+      g.setAttribute('data-idx', idx);
+      g.setAttribute('opacity','.45');
+      g.setAttribute('filter','grayscale(0.9)');
+      g.style.filter='grayscale(90%)';
+    }
+    g.innerHTML = inner;
+    placedG.appendChild(g);
+  });
+}
+function anyBroken(){ return placed.some(p=>p.broken); }
+function undo(){
+  if(placed.length<=3){ toast("The island keeps its first memories of you."); return; }
+  if(placed[placed.length-1].gold){ toast("Gold stays. That one's part of the story now."); return; }
+  placed.pop(); drawAll(); renderPortrait(); save();
+}
+
+/* ---------- THE TRIAL: storm → break → mend(gold) → EXPAND ---------- */
+function trial(){
+  stormActive = true; sincePlace = 0;
+  const card = document.getElementById('card');
+  const stormG = document.getElementById('storm');
+  // darken + rain + shake
+  stormG.innerHTML = '<rect width="680" height="460" fill="#0a1c2b" opacity="0"><animate attributeName="opacity" values="0;.5;.5" dur="1s" fill="freeze"/></rect>' +
+    Array.from({length:26},()=>{const x=Math.random()*680,y=Math.random()*300;
+      return '<line x1="'+x+'" y1="'+y+'" x2="'+(x-6)+'" y2="'+(y+22)+'" stroke="#9ed3dc" stroke-width="1.6" opacity=".7"/>';}).join('');
+  card.classList.add('shake');
+  toast('The island is testing you.');
+  setTimeout(()=>{
+    // break 1-2 non-gold pieces
+    const candidates = placed.map((p,i)=>({p,i})).filter(o=>!o.p.gold && !o.p.broken);
+    const nBreak = Math.min(candidates.length, placed.length>6?2:1);
+    for(let k=0;k<nBreak;k++){
+      const pick = candidates.splice(Math.floor(Math.random()*candidates.length),1)[0];
+      if(pick) placed[pick.i].broken = 1;
+    }
+    drawAll();
+  }, 900);
+  setTimeout(()=>{
+    stormG.innerHTML=''; card.classList.remove('shake'); stormActive=false;
+    setTip(); renderPortrait(); save();
+    toast('It broke something. Mend it — tap the gray pieces.');
+  }, 2600);
+}
+function mend(idx){
+  const pl = placed[idx]; if(!pl||!pl.broken) return;
+  pl.broken = 0; pl.gold = 1;
+  drawAll(); renderPortrait(); save(); setTip();
+  if(!anyBroken()){
+    setTimeout(expand, 500);
+  } else {
+    toast('Mended — with gold. One more to go.');
+  }
+}
+/* expansion: new land rises after every survived trial */
+function expand(){
+  expansions++;
+  RX += 30; RY += 9;
+  drawRings();
+  renderPortrait();
+  toast('The island grew. It does that, after storms.');
+  if(mystery===0){ setTimeout(()=>{ mystery=1; drawWonder(); toast('…wait. Something washed ashore. It\u2019s glowing.'); save(); }, 1600); }
+  save();
+}
+function drawRings(){
+  const rings = document.getElementById('rings');
+  rings.innerHTML = '';
+  for(let i=1;i<=expansions;i++){
+    const rx = 245 + i*30, ry = 68 + i*9;
+    rings.innerHTML += '<ellipse cx="340" cy="322" rx="'+rx+'" ry="'+ry+'" fill="#e7d4a0" opacity="'+(0.92 - i*0.04)+'" stroke="#cdb277" stroke-width="2"/>'
+      + '<ellipse cx="340" cy="318" rx="'+(rx-16)+'" ry="'+(ry-6)+'" fill="#74b989" opacity=".25"/>';
+  }
+  // keep base isle on top visually: rings are drawn in #rings which sits before #isle in DOM ✔
+}
+
+/* ---------- THE WONDER: tease -> dare -> real world -> return -> reveal ---------- */
+const wonderG = document.getElementById('wonder');
+function drawWonder(){
+  wonderG.innerHTML='';
+  if(mystery===1){
+    // glowing egg on the new shore — locked, curious, clickable
+    wonderG.innerHTML = '<g id="egg" style="cursor:pointer">'+
+      '<circle cx="520" cy="352" r="22" fill="#f0c85a" opacity=".28"><animate attributeName="r" values="18;26;18" dur="2s" repeatCount="indefinite"/></circle>'+
+      '<path d="M520 336 q11 6 11 17 q0 10 -11 10 q-11 0 -11 -10 q0 -11 11 -17z" fill="#fdf3d3" stroke="#d6a327" stroke-width="2"/>'+
+      '<text x="520" y="357" text-anchor="middle" font-size="11" fill="#a8842a" font-weight="bold">?</text></g>';
+    document.getElementById('egg').addEventListener('click', openDare);
+  }
+  if(mystery===2){
+    // LEGENDARY: the Boogie Bird Deluxe — alive (bobbing), gold aura, unattainable by tapping
+    wonderG.innerHTML = '<g class="bob">'+
+      '<circle cx="520" cy="345" r="20" fill="#f0c85a" opacity=".3"/>'+
+      '<ellipse cx="520" cy="347" rx="10" ry="8" fill="#e0784a"/>'+
+      '<circle cx="528" cy="341" r="5" fill="#e0784a"/><circle cx="530" cy="340" r="1.3" fill="#20303a"/>'+
+      '<path d="M532.5 342.5 l6 1.5 -6 1.5z" fill="#f0c85a"/>'+
+      '<path d="M510 347 q-6 -3 -7 -9 q6 0 10 4" fill="#c95f33"/>'+
+      '<path d="M513 341 q-3 -6 0 -9 M520 338 q0 -6 3 -8" stroke="#f0c85a" stroke-width="1.4" fill="none"/>'+
+      '<path d="M516 355 l-1.5 5 M524 355 l1.5 5" stroke="#8a5a2f" stroke-width="1.6"/></g>';
+  }
+}
+function openDare(){ if(mystery===1) document.getElementById('daremask').classList.add('on'); }
+function closeDare(){ document.getElementById('daremask').classList.remove('on'); toast('It\u2019ll wait. Real laughs don\u2019t expire.'); }
+function claimDare(){
+  document.getElementById('daremask').classList.remove('on');
+  mystery=2; wonders++;
+  drawWonder();
+  // celebration sparkles
+  const stormG=document.getElementById('storm');
+  let sp='';
+  for(let i=0;i<14;i++){const a=i/14*6.283;sp+='<circle cx="'+(520+Math.cos(a)*8)+'" cy="'+(347+Math.sin(a)*8)+'" r="2.5" fill="#f0c85a"><animate attributeName="cx" to="'+(520+Math.cos(a)*46)+'" dur=".9s" fill="freeze"/><animate attributeName="cy" to="'+(347+Math.sin(a)*46)+'" dur=".9s" fill="freeze"/><animate attributeName="opacity" values="1;0" dur=".9s" fill="freeze"/></circle>';}
+  stormG.innerHTML=sp; setTimeout(()=>stormG.innerHTML='',1000);
+  toast('LEGENDARY \u2014 a living one. The island only makes these for real-world deeds.');
+  renderPortrait(); save();
+}
+
+/* ---------- the mirror: portrait ---------- */
+function renderPortrait(){
+  const counts={};
+  placed.forEach(pl=>{ const t=PIECES.find(p=>p.id===pl.id).t; counts[t]=(counts[t]||0)+ (pl.gold?2:1); });
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const box = document.getElementById('portrait');
+  if(!entries.length){ box.innerHTML='<span class="lead">Nothing yet. Islands are patient.</span>'; return; }
+  const total = entries.reduce((s,e)=>s+e[1],0);
+  const [top, second] = entries;
+  let line = 'Right now, you are growing <b style="color:'+TREASURES[top[0]].color+'">'+TREASURES[top[0]].says+'</b>';
+  if(second) line += ' — with a streak of <b style="color:'+TREASURES[second[0]].color+'">'+TREASURES[second[0]].says+'</b>';
+  line += '.';
+  const nGold = placed.filter(p=>p.gold).length;
+  let scar = '';
+  if(nGold) scar = '<span class="scar">Storm-tested ×'+expansions+'. The gold parts are where it broke.</span>';
+  if(wonders) scar += '<span class="scar" style="color:#c47a2c">Wonders raised: '+wonders+' — only real-world deeds make these.</span>';
+  box.innerHTML = '<span class="lead">'+line+'</span>'+scar;
+  const meters = document.getElementById('meters');
+  meters.innerHTML='';
+  entries.slice(0,4).forEach(([t,c])=>{
+    const tr = TREASURES[t];
+    meters.innerHTML += '<div class="meterrow"><span style="width:58px;color:'+tr.color+';font-weight:700">'+tr.name+'</span>'+
+      '<div class="bar"><div class="fill" style="width:'+Math.round(100*c/total)+'%;background:'+tr.color+'"></div></div><span>'+c+'</span></div>';
+  });
+}
+
+/* ---------- share / persistence via URL hash ---------- */
+function save(){
+  try{
+    const data = { g:genesis, p:placed, e:expansions, m:mystery, w:wonders };
+    location.hash = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  }catch(e){}
+}
+function load(){
+  if(!location.hash || location.hash.length<4) return false;
+  try{
+    const data = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+    if(!data.p || !data.p.length) return false;
+    genesis = data.g||[]; expansions = data.e||0; mystery = data.m||0; wonders = data.w||0;
+    RX = 225 + expansions*30; RY = 62 + expansions*9;
+    document.getElementById('genesis').style.display='none';
+    document.getElementById('builder').style.display='block';
+    placed = data.p;
+    drawRings(); drawAll(); drawWonder(); renderPortrait(); setTip();
+    return true;
+  }catch(e){ return false; }
+}
+function shareIsland(){
+  save();
+  const url = location.href;
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link copied — that\\u2019s you, in island form.')); }
+  else toast('Copy the address bar link — that\\u2019s your island.');
+}
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+/* stars */
+const stars=document.getElementById('stars');
+for(let i=0;i<26;i++){
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',Math.random()*680); c.setAttribute('cy',Math.random()*180);
+  c.setAttribute('r',1+Math.random()); c.setAttribute('fill','#fff'); c.setAttribute('opacity',.2+Math.random()*.5);
+  stars.appendChild(c);
+}
+
+load();
+</script>
+</body>
+</html>
