@@ -731,5 +731,44 @@ load();
   };
 })();
 </script>
+<script id="v06">
+/* v0.6 — Bianca's review #2: one message system only; bubble fully hidden until summoned; character voices + Bianca (narrator) */
+(function(){
+  /* 1. remove the old tip bar — the bubble is the only messenger now */
+  var tip = document.getElementById('tip');
+  if(tip) tip.style.display = 'none';
+  /* 2. bubble must be invisible until summoned, and rise from bottom center */
+  var st = document.createElement('style');
+  st.textContent =
+    '#toast{visibility:hidden;opacity:0;transform:translateX(-50%) translateY(180px) !important;' +
+      'transition:transform .35s ease, opacity .3s ease, visibility 0s linear .35s !important;}' +
+    '#toast.show{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0) !important;' +
+      'transition:transform .35s ease, opacity .3s ease, visibility 0s !important;}';
+  document.head.appendChild(st);
+  /* 3. who says what */
+  var base = window.toast; /* v05 toast(msg, speaker) */
+  function guess(msg){
+    var m = msg.toLowerCase();
+    if(m.indexOf('mend') > -1) return 'PATCH';
+    if(m.indexOf('legendary') > -1 || m.indexOf('expire') > -1) return 'KAZOO';
+    if(m.indexOf('link copied') > -1 || m.indexOf('copy the address') > -1 || m.indexOf('sea isn') > -1) return 'BRIGHT';
+    return 'BIANCA (NARRATOR)';
+  }
+  window.toast = function(msg, speaker){ base(msg, speaker || guess(msg)); };
+  /* 4. the old tips now arrive as Bright, once each (storm help can repeat) */
+  var seenTips = {};
+  window.setTip = function(msg){
+    var text = msg;
+    if(!text){
+      if(anyBroken()) text = 'The storm broke something. Tap the gray pieces to mend them.';
+      else if(selected) text = 'Now tap the island to plant it!';
+      else text = 'Pick a piece, then tap the island to plant it.';
+    }
+    if(seenTips[text] && text.indexOf('broke') === -1) return;
+    seenTips[text] = true;
+    base(text, 'BRIGHT');
+  };
+})();
+</script>
 </body>
 </html>
