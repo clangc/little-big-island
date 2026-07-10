@@ -537,5 +537,170 @@ for(let i=0;i<26;i++){
 
 load();
 </script>
+<script id="v04">
+/* v0.4 — Bianca's notes: 1) the island needs a zoom  2) more real-life challenges */
+(function(){
+  /* ================= ZOOM & PAN ================= */
+  var VB = {x:0, y:0, w:680, h:460};
+  function applyVB(){ sea.setAttribute('viewBox', VB.x+' '+VB.y+' '+VB.w+' '+VB.h); }
+  function clampVB(){
+    if(VB.w < 200) VB.w = 200; if(VB.w > 1300) VB.w = 1300;
+    VB.h = VB.w * 460/680;
+    if(VB.x < -650) VB.x = -650; if(VB.x > 1330 - VB.w) VB.x = 1330 - VB.w;
+    if(VB.y < -450) VB.y = -450; if(VB.y > 910 - VB.h) VB.y = 910 - VB.h;
+  }
+  function zoomAt(f, sx, sy){
+    var k = 1/f, nw = VB.w*k;
+    if(nw < 200) k = 200/VB.w;
+    if(nw > 1300) k = 1300/VB.w;
+    VB.x = sx - (sx - VB.x)*k;
+    VB.y = sy - (sy - VB.y)*k;
+    VB.w = VB.w*k; VB.h = VB.h*k;
+    clampVB(); applyVB();
+  }
+  /* stretch the ocean so zooming out never shows the void */
+  var seaRect = sea.querySelector('rect');
+  seaRect.setAttribute('x','-1000'); seaRect.setAttribute('y','-700');
+  seaRect.setAttribute('width','2680'); seaRect.setAttribute('height','1860');
+  sea.style.touchAction = 'none';
+  /* buttons */
+  var card = document.getElementById('card');
+  var zc = document.createElement('div'); zc.id = 'zoomctl';
+  zc.innerHTML = '<button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button>';
+  card.appendChild(zc);
+  var zst = document.createElement('style');
+  zst.textContent = '#zoomctl{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:5}#zoomctl button{width:38px;height:38px;border-radius:50%;border:none;background:rgba(14,36,56,.78);color:#ffe9a8;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.35);line-height:1}#zoomctl button:active{transform:scale(.92)}';
+  document.head.appendChild(zst);
+  document.getElementById('zin').onclick = function(){ zoomAt(1.4, VB.x+VB.w/2, VB.y+VB.h/2); };
+  document.getElementById('zout').onclick = function(){ zoomAt(1/1.4, VB.x+VB.w/2, VB.y+VB.h/2); };
+  /* mouse wheel zoom */
+  card.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var p = svgPoint(e);
+    zoomAt(e.deltaY < 0 ? 1.15 : 1/1.15, p.x, p.y);
+  }, {passive:false});
+  /* drag = pan, pinch = zoom, tap = plant (unchanged) */
+  var pointers = {}, didPan = false, downPt = null, lastPt = null, pinchD = 0;
+  sea.addEventListener('pointerdown', function(e){
+    pointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+    if(Object.keys(pointers).length === 1){ downPt = {x:e.clientX, y:e.clientY}; lastPt = downPt; didPan = false; }
+    else pinchD = 0;
+  });
+  sea.addEventListener('pointermove', function(e){
+    if(!pointers[e.pointerId]) return;
+    pointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+    var ks = Object.keys(pointers);
+    var r = sea.getBoundingClientRect();
+    var sx = VB.w / r.width, sy = VB.h / r.height;
+    if(ks.length === 2){
+      var p1 = pointers[ks[0]], p2 = pointers[ks[1]];
+      var d = Math.hypot(p1.x-p2.x, p1.y-p2.y);
+      if(pinchD > 0 && d > 0){
+        var mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2;
+        zoomAt(d/pinchD, VB.x + (mx - r.left)*sx, VB.y + (my - r.top)*sy);
+      }
+      pinchD = d; didPan = true;
+    } else if(ks.length === 1 && downPt){
+      if(Math.abs(e.clientX-downPt.x) + Math.abs(e.clientY-downPt.y) > 10) didPan = true;
+      if(didPan){
+        VB.x -= (e.clientX - lastPt.x)*sx;
+        VB.y -= (e.clientY - lastPt.y)*sy;
+        clampVB(); applyVB();
+      }
+      lastPt = {x:e.clientX, y:e.clientY};
+    }
+  });
+  function lift(e){
+    delete pointers[e.pointerId]; pinchD = 0;
+    if(Object.keys(pointers).length === 0){ downPt = null; setTimeout(function(){ didPan = false; }, 80); }
+  }
+  sea.addEventListener('pointerup', lift);
+  sea.addEventListener('pointercancel', lift);
+  /* a pan or pinch must not plant a piece */
+  sea.addEventListener('click', function(e){
+    if(didPan){ e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+
+  /* ================= REAL-LIFE DARES, PLURAL ================= */
+  var DARES = [
+    {t:'Whatever is inside only opens for someone who <b>made somebody laugh today</b>. Not a screen laugh. A real one. Go. Come back.', n:'the Boogie Bird Deluxe'},
+    {t:'This one only opens for <b>ninja kindness</b>: do something kind for someone and don’t get caught. If they find out, it doesn’t count. Go. Be sneaky.', n:'the Ninja Fox'},
+    {t:'This one only opens for someone who <b>helped before being asked</b>. Asking ruins it. Look around. Somebody needs a hand.', n:'the Helper Crab'},
+    {t:'This one only opens for a <b>real thank-you</b>: tell someone exactly why they’re great. Details. “You’re nice” doesn’t count.', n:'the Confetti Turtle'},
+    {t:'This one only opens for someone <b>brave out loud</b>: say the thing you’ve been too scared to say. To a person. With your voice.', n:'the Roar Mouse'},
+    {t:'This one only opens <b>outside</b>: go find something tiny and amazing — a bug, a leaf, a weird cloud — and show it to somebody.', n:'the Wonder Snail'},
+    {t:'This one only opens for a <b>peacemaker</b>: fix a fight today. Yours or somebody else’s. Even a small one.', n:'the Peace Llama'}
+  ];
+  var SPOTS = [[520,352],[158,350],[340,404],[566,296],[118,296],[252,196],[430,190]];
+  var HUES = [['#e0784a','#c95f33'],['#c9743f','#8f4f28'],['#5da271','#3f7d55'],['#8a7fc9','#645aa0'],['#d6a327','#a8842a'],['#e8a7b8','#c47488'],['#6fb3c9','#44869c']];
+  function creatureSVG(i, sp){
+    var x = sp[0], y = sp[1], c = HUES[i % HUES.length];
+    return '<g class="bob">'+
+      '<circle cx="'+x+'" cy="'+(y-7)+'" r="20" fill="#f0c85a" opacity=".3"/>'+
+      '<ellipse cx="'+x+'" cy="'+(y-5)+'" rx="10" ry="8" fill="'+c[0]+'"/>'+
+      '<circle cx="'+(x+8)+'" cy="'+(y-11)+'" r="5" fill="'+c[0]+'"/><circle cx="'+(x+10)+'" cy="'+(y-12)+'" r="1.3" fill="#20303a"/>'+
+      '<path d="M'+(x+12.5)+' '+(y-9.5)+' l6 1.5 -6 1.5z" fill="#f0c85a"/>'+
+      '<path d="M'+(x-10)+' '+(y-5)+' q-6 -3 -7 -9 q6 0 10 4" fill="'+c[1]+'"/>'+
+      '<path d="M'+(x-7)+' '+(y-11)+' q-3 -6 0 -9 M'+x+' '+(y-14)+' q0 -6 3 -8" stroke="#f0c85a" stroke-width="1.4" fill="none"/>'+
+      '<path d="M'+(x-4)+' '+(y+3)+' l-1.5 5 M'+(x+4)+' '+(y+3)+' l1.5 5" stroke="#8a5a2f" stroke-width="1.6"/></g>';
+  }
+  window.drawWonder = function(){
+    wonderG.innerHTML = '';
+    for(var i=0; i<wonders; i++){ wonderG.innerHTML += creatureSVG(i, SPOTS[i % SPOTS.length]); }
+    if(mystery === 1){
+      var sp = SPOTS[wonders % SPOTS.length];
+      wonderG.innerHTML += '<g id="egg" style="cursor:pointer">'+
+        '<circle cx="'+sp[0]+'" cy="'+sp[1]+'" r="22" fill="#f0c85a" opacity=".28"><animate attributeName="r" values="18;26;18" dur="2s" repeatCount="indefinite"/></circle>'+
+        '<path d="M'+sp[0]+' '+(sp[1]-16)+' q11 6 11 17 q0 10 -11 10 q-11 0 -11 -10 q0 -11 11 -17z" fill="#fdf3d3" stroke="#d6a327" stroke-width="2"/>'+
+        '<text x="'+sp[0]+'" y="'+(sp[1]+5)+'" text-anchor="middle" font-size="11" fill="#a8842a" font-weight="bold">?</text></g>';
+      document.getElementById('egg').addEventListener('click', openDare);
+    }
+  };
+  window.openDare = function(){
+    if(mystery !== 1) return;
+    var d = DARES[Math.min(wonders, DARES.length-1)];
+    document.getElementById('dareText').innerHTML = d.t;
+    document.getElementById('daremask').classList.add('on');
+  };
+  window.claimDare = function(){
+    document.getElementById('daremask').classList.remove('on');
+    var d = DARES[Math.min(wonders, DARES.length-1)];
+    var sp = SPOTS[wonders % SPOTS.length];
+    mystery = 0; wonders++;
+    drawWonder();
+    var stormG = document.getElementById('storm'); var s = '';
+    for(var i=0; i<14; i++){
+      var a = i/14*6.283;
+      s += '<circle cx="'+(sp[0]+Math.cos(a)*8)+'" cy="'+(sp[1]+Math.sin(a)*8)+'" r="2.5" fill="#f0c85a"><animate attributeName="cx" to="'+(sp[0]+Math.cos(a)*46)+'" dur=".9s" fill="freeze"/><animate attributeName="cy" to="'+(sp[1]+Math.sin(a)*46)+'" dur=".9s" fill="freeze"/><animate attributeName="opacity" values="1;0" dur=".9s" fill="freeze"/></circle>';
+    }
+    stormG.innerHTML = s; setTimeout(function(){ stormG.innerHTML=''; }, 1000);
+    toast('LEGENDARY — '+d.n+' is ALIVE. The island only makes these for real-world deeds.');
+    renderPortrait(); save();
+  };
+  window.expand = function(){
+    expansions++; RX += 30; RY += 9;
+    drawRings(); renderPortrait();
+    toast('The island grew. It does that, after storms.');
+    if(mystery === 0 && wonders < DARES.length){
+      setTimeout(function(){ mystery = 1; drawWonder(); toast('…wait. Something new washed ashore. It’s glowing.'); save(); }, 1600);
+    }
+    save();
+  };
+  /* migrate old islands: m used to stick at 2 after the first claim */
+  if(mystery === 2){ mystery = 0; save(); }
+  if(document.getElementById('builder').style.display === 'block'){ drawWonder(); }
+
+  /* ================= FIELD GUIDE UPDATES ================= */
+  var rules = document.querySelectorAll('#guidemask .grule p');
+  if(rules[4]) rules[4].innerHTML = '<b>Glowing things are dares.</b> After the island grows, something mysterious washes ashore. It only opens for a REAL-world deed — a real laugh, ninja kindness, a brave thing said out loud. Do it, come back, tap it… and what hatches is <b>alive</b>. And there’s always another one coming. The island never runs out of dares.';
+  var gps = document.querySelector('#guidemask .gps');
+  if(gps){
+    var zn = document.createElement('p');
+    zn.style.cssText = 'font-size:12px;color:#8a8270;margin:12px 0 0;text-align:center;';
+    zn.textContent = '(Pinch or use + / − to zoom. The island gets big. That’s the point.)';
+    gps.parentNode.insertBefore(zn, gps);
+  }
+})();
+</script>
 </body>
 </html>
