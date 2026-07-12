@@ -31,8 +31,10 @@ function height(x,z){
   const island=1-smooth(0.62,1.04,r);            // radial falloff → surrounded by ocean
   const hills=fbm(x*0.0016,z*0.0016);            // rolling hills
   let h=island*(6+hills*22);
-  const ridge=Math.max(0,(-nz-0.05));            // a highland rising toward the north
-  h+=island*(ridge*70+ridge*ridge*90);
+  const ridge=Math.max(0,(-nz-0.02));            // a highland/cliff rising toward the north
+  h+=island*(ridge*80+ridge*ridge*260);
+  const cliffN=fbm(x*0.004+9,z*0.004+3);         // craggy variation on the highland
+  h+=island*ridge*ridge*cliffN*90;
   return h-4;                                    // sink edges below the sea
 }
 
@@ -118,14 +120,15 @@ function billboard(url,hgt,x,z,aspect){
   sp.scale.set(hgt*(aspect||1),hgt,1);
   sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);return sp;
 }
-billboard('../assets/house.png', 44, -70, 150, 1.0);
-billboard('../assets/bright.png', 52, 30, 175, 0.5);
-billboard('../assets/pine.png', 40, 120, 120, 0.7);
+billboard('../assets/house.png', 48, -80, 40, 1.0);
+billboard('../assets/bright.png', 52, 70, 90, 0.5);
+billboard('../assets/pine.png', 46, 150, 10, 0.7);
+billboard('../assets/rock.png', 26, -30, 150, 1.1);
 
-/* ---------- first-person view: standing on the meadow, looking across the island ---------- */
-const px=34, pz=250;
-camera.position.set(px, height(px,pz)+11, pz);
-camera.lookAt(-16, 24, -TERR*0.42);
+/* ---------- first-person view: standing on the meadow, looking up the island to the highland ---------- */
+const px=20, pz=250;
+camera.position.set(px, height(px,pz)+12, pz);
+camera.lookAt(-6, 40, -140);
 
 let t0=performance.now();
 function frame(now){
