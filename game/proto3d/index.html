@@ -106,12 +106,17 @@ ocean.rotation.x=-Math.PI/2;ocean.position.y=0;scene.add(ocean);
 
 /* ---------- the cave: a real recess in the north highland, warm light inside ---------- */
 const caveX=-60, caveZ=-330, caveY=height(caveX,caveZ);
-const caveMouth=new THREE.Mesh(new THREE.SphereGeometry(26,20,16),
-  new THREE.MeshBasicMaterial({color:0x1c120a}));
-caveMouth.scale.set(1.15,0.8,0.7);caveMouth.position.set(caveX,caveY+9,caveZ);scene.add(caveMouth);
+const rockMat=new THREE.MeshToonMaterial({color:0x6e6152,gradientMap:GRAD});
+const arch=new THREE.Mesh(new THREE.TorusGeometry(20,7.5,10,18,Math.PI),rockMat);
+arch.position.set(caveX,caveY+4,caveZ+14);scene.add(arch);
+for(const[sx,sy,sz,r] of [[-19,2,16,7],[19,2,16,7],[-12,16,14,6],[12,16,14,6],[0,22,12,7]]){
+  const b=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),rockMat);
+  b.position.set(caveX+sx,caveY+sy,caveZ+sz);b.scale.set(1.3,0.9,1);scene.add(b);}
+const caveDark=new THREE.Mesh(new THREE.CircleGeometry(16,24),new THREE.MeshBasicMaterial({color:0x140d06}));
+caveDark.position.set(caveX,caveY+7,caveZ+15);scene.add(caveDark);
 const caveGlow=new THREE.Mesh(new THREE.CircleGeometry(17,24),
   new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
-caveGlow.position.set(caveX,caveY+8,caveZ+19);scene.add(caveGlow);
+caveGlow.position.set(caveX,caveY+7,caveZ+16);scene.add(caveGlow);
 const caveLight=new THREE.PointLight(0xff9a3d,10,260,1.6);
 caveLight.position.set(caveX,caveY+10,caveZ+24);scene.add(caveLight);
 
@@ -150,6 +155,33 @@ billboard('../assets/bright.png',50,40,60,0.5);
 billboard('../assets/pine.png',46,120,-40,0.7);
 billboard('../assets/rock.png',24,-28,140,1.1);
 
+/* ---------- living grass: instanced wind-swayed blades ---------- */
+const uTime={value:0};
+{
+  const blade=new THREE.PlaneGeometry(0.42,2.3,1,3);blade.translate(0,1.15,0);
+  {const bp=blade.attributes.position;               // taper to a grass tip
+   for(let i=0;i<bp.count;i++){const yy=bp.getY(i);const t=Math.max(0,Math.min(1,yy/2.3));
+     bp.setX(i,bp.getX(i)*(1-t*0.92));}}
+  const gmat=new THREE.MeshToonMaterial({color:0xffffff,gradientMap:GRAD,side:THREE.DoubleSide,vertexColors:false});
+  gmat.onBeforeCompile=(sh)=>{sh.uniforms.uTime=uTime;
+    sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',
+      '#include <begin_vertex>\nfloat swy=sin(uTime*1.7+float(gl_InstanceID)*0.61)*0.22;\ntransformed.x+=swy*transformed.y*0.28;');};
+  const N=4200, inst=new THREE.InstancedMesh(blade,gmat,N);
+  const grng=mulberry32(SEED+31), m=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(),
+        v=new THREE.Vector3(), sc=new THREE.Vector3(), cA=new THREE.Color('#5f8f3a'), cB=new THREE.Color('#94a848');
+  let placed=0;
+  for(let i=0;i<N*3&&placed<N;i++){
+    const x=15+(grng()*2-1)*260, z=245+(grng()*2-1)*260, y=height(x,z);
+    if(y<1.6||y>24)continue;
+    e.set((grng()-0.5)*0.2,grng()*Math.PI,(grng()-0.5)*0.25);q.setFromEuler(e);
+    const h2=0.55+grng()*0.75; sc.set(0.7+grng()*0.5,h2,1); v.set(x,y,z);
+    m.compose(v,q,sc); inst.setMatrixAt(placed,m);
+    inst.setColorAt(placed,new THREE.Color().copy(cA).lerp(cB,grng()));
+    placed++;
+  }
+  inst.count=placed; inst.instanceMatrix.needsUpdate=true; if(inst.instanceColor)inst.instanceColor.needsUpdate=true;
+  scene.add(inst);
+}
 /* ---------- first-person walking (keys + touch drag), portrait-first framing ---------- */
 let px=15,pz=235,ang=-0.12,vel=0;
 const keys={};addEventListener('keydown',e=>keys[e.key.toLowerCase()]=1);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
@@ -160,7 +192,7 @@ addEventListener('pointerup',()=>{touch=null;vel=0;});
 setGrowth(GROWTH);
 let t0=performance.now();
 function frame(now){
-  const dt=Math.min(0.05,(now-t0)/1000);t0=now;
+  const dt=Math.min(0.05,(now-t0)/1000);t0=now;uTime.value=now*0.001;
   let f=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
   ang+=((keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0))*1.8*dt;
   const sp=f*95+vel;
