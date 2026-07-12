@@ -78,9 +78,10 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
       const out = {};
       for (const b of boxes) {
         const bx0 = Math.round(b.x0 * w), bx1 = Math.round(b.x1 * w), bw = bx1 - bx0;
-        const tc = document.createElement('canvas'); tc.width = bw; tc.height = h;
-        const tg = tc.getContext('2d'); tg.drawImage(c, bx0, 0, bw, h, 0, 0, bw, h);
-        const d = tg.getImageData(0, 0, bw, h), a = d.data;
+        const by0 = Math.round((b.y0 || 0) * h), by1 = Math.round((b.y1 || 1) * h), bh = by1 - by0;
+        const tc = document.createElement('canvas'); tc.width = bw; tc.height = bh;
+        const tg = tc.getContext('2d'); tg.drawImage(c, bx0, by0, bw, bh, 0, 0, bw, bh);
+        const d = tg.getImageData(0, 0, bw, bh), a = d.data;
         // key white → alpha
         for (let i = 0; i < a.length; i += 4) {
           const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2];
@@ -92,7 +93,8 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
             a[i+2]=Math.min(255,Math.max(0,(a[i+2]-inv)/al)); }
         }
         // keep only the largest connected blob (drops neighbour slivers at the edges)
-        const N = bw * h, lab = new Int32Array(N).fill(-1), stack = new Int32Array(N);
+        const h2 = bh;
+        const N = bw * h2, lab = new Int32Array(N).fill(-1), stack = new Int32Array(N);
         let best = -1, bestSize = 0, comp = 0;
         for (let p = 0; p < N; p++) {
           if (a[p * 4 + 3] <= 70 || lab[p] !== -1) continue;
@@ -103,13 +105,13 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
             if (qx > 0 && a[(q - 1) * 4 + 3] > 70 && lab[q - 1] === -1) { lab[q - 1] = comp; stack[sp++] = q - 1; }
             if (qx < bw - 1 && a[(q + 1) * 4 + 3] > 70 && lab[q + 1] === -1) { lab[q + 1] = comp; stack[sp++] = q + 1; }
             if (qy > 0 && a[(q - bw) * 4 + 3] > 70 && lab[q - bw] === -1) { lab[q - bw] = comp; stack[sp++] = q - bw; }
-            if (qy < h - 1 && a[(q + bw) * 4 + 3] > 70 && lab[q + bw] === -1) { lab[q + bw] = comp; stack[sp++] = q + bw; }
+            if (qy < h2 - 1 && a[(q + bw) * 4 + 3] > 70 && lab[q + bw] === -1) { lab[q + bw] = comp; stack[sp++] = q + bw; }
           }
           if (size > bestSize) { bestSize = size; best = comp; }
           comp++;
         }
-        let minx = bw, miny = h, maxx = 0, maxy = 0;
-        for (let y = 0; y < h; y++) for (let x = 0; x < bw; x++) {
+        let minx = bw, miny = h2, maxx = 0, maxy = 0;
+        for (let y = 0; y < h2; y++) for (let x = 0; x < bw; x++) {
           const p = y * bw + x;
           if (!b.keepAll && lab[p] !== best) { a[p * 4 + 3] = 0; }              // erase everything but the main character
           else { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
@@ -117,7 +119,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         tg.putImageData(d, 0, 0);
         const pad = 8;
         minx = Math.max(0, minx - pad); miny = Math.max(0, miny - pad);
-        maxx = Math.min(bw - 1, maxx + pad); maxy = Math.min(h - 1, maxy + pad);
+        maxx = Math.min(bw - 1, maxx + pad); maxy = Math.min(h2 - 1, maxy + pad);
         const cw = maxx - minx + 1, ch = maxy - miny + 1;
         const s = Math.min(1, 760 / Math.max(cw, ch));
         const ow = Math.max(1, Math.round(cw * s)), oh = Math.max(1, Math.round(ch * s));
@@ -177,7 +179,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
 
   console.log('· FINAL CG cast — five from approved sheet, Bright from v3');
   const CG5 = U + '72e6e22f-IMG_1244.png';
-  const CGB = U + '3d4899b1-IMG_1247.png';
+  const CGB = U + '98b2ece3-IMG_1250.png';
   await keyCast(CG5, [
     { name: 'kazoo',  x0: 0.214, x1: 0.360 },
     { name: 'patch',  x0: 0.360, x1: 0.512 },
@@ -185,7 +187,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
     { name: 'shaky',  x0: 0.663, x1: 0.828, keepAll: true },
     { name: 'thread', x0: 0.828, x1: 1.0 },
   ], 85, 0.24);
-  await keyCast(CGB, [ { name: 'bright', x0: 0.02, x1: 0.205 } ], 85, 0.24);
+  await keyCast(CGB, [ { name: 'bright', x0: 0.02, x1: 0.44, y0: 0.16, y1: 0.925 } ], 85, 0.24);
   // (retired) painterly-lineup cast cut — superseded by the FINAL CG cast above
 
   await b.close();
