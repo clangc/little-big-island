@@ -74,13 +74,34 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         const tc = document.createElement('canvas'); tc.width = bw; tc.height = h;
         const tg = tc.getContext('2d'); tg.drawImage(c, bx0, 0, bw, h, 0, 0, bw, h);
         const d = tg.getImageData(0, 0, bw, h), a = d.data;
-        let minx = bw, miny = h, maxx = 0, maxy = 0;
-        for (let y = 0; y < h; y++) for (let x = 0; x < bw; x++) {
-          const i = (y * bw + x) * 4;
+        // key white → alpha
+        for (let i = 0; i < a.length; i += 4) {
           const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2];
           let al = Math.sqrt(dr * dr + dg * dg + db * db) / 62; if (al > 1) al = 1;
           a[i + 3] = Math.round(al * 255);
-          if (a[i + 3] > 40) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+        }
+        // keep only the largest connected blob (drops neighbour slivers at the edges)
+        const N = bw * h, lab = new Int32Array(N).fill(-1), stack = new Int32Array(N);
+        let best = -1, bestSize = 0, comp = 0;
+        for (let p = 0; p < N; p++) {
+          if (a[p * 4 + 3] <= 70 || lab[p] !== -1) continue;
+          let sp = 0; stack[sp++] = p; lab[p] = comp; let size = 0;
+          while (sp > 0) {
+            const q = stack[--sp]; size++;
+            const qx = q % bw, qy = (q / bw) | 0;
+            if (qx > 0 && a[(q - 1) * 4 + 3] > 70 && lab[q - 1] === -1) { lab[q - 1] = comp; stack[sp++] = q - 1; }
+            if (qx < bw - 1 && a[(q + 1) * 4 + 3] > 70 && lab[q + 1] === -1) { lab[q + 1] = comp; stack[sp++] = q + 1; }
+            if (qy > 0 && a[(q - bw) * 4 + 3] > 70 && lab[q - bw] === -1) { lab[q - bw] = comp; stack[sp++] = q - bw; }
+            if (qy < h - 1 && a[(q + bw) * 4 + 3] > 70 && lab[q + bw] === -1) { lab[q + bw] = comp; stack[sp++] = q + bw; }
+          }
+          if (size > bestSize) { bestSize = size; best = comp; }
+          comp++;
+        }
+        let minx = bw, miny = h, maxx = 0, maxy = 0;
+        for (let y = 0; y < h; y++) for (let x = 0; x < bw; x++) {
+          const p = y * bw + x;
+          if (lab[p] !== best) { a[p * 4 + 3] = 0; }              // erase everything but the main character
+          else { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
         }
         tg.putImageData(d, 0, 0);
         const pad = 8;
