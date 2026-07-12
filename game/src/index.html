@@ -30,40 +30,57 @@
     position:fixed; top:0; left:0; right:0; display:flex; align-items:center; gap:7px;
     padding:8px 10px; pointer-events:none; z-index:20; flex-wrap:wrap;
   }
+  /* ---- ornate wood + parchment HUD (storybook / adventure-game look) ---- */
   .plate{
-    background:rgba(250,244,230,.94); border:1px solid #e0d5b8; border-radius:12px;
-    padding:6px 12px; box-shadow:0 3px 10px rgba(10,40,50,.25); pointer-events:auto;
+    background:linear-gradient(#fbf1d6,#eeddb0); border:2px solid #7a5a34; border-radius:14px;
+    padding:7px 14px; color:#4a3418; pointer-events:auto;
+    box-shadow:inset 0 0 0 2px #d9bd82, inset 0 2px 3px rgba(255,255,255,.6),
+      0 4px 0 #6b4d2c, 0 9px 16px rgba(18,30,20,.4);
   }
-  .who{font-size:14px; line-height:1.25;}
-  .who .iname{font-weight:bold; color:var(--sea-deep); font-size:15px;}
-  .who .ename{color:var(--soft); font-style:italic; font-size:12px;}
+  .who{font-size:14px; line-height:1.22;}
+  .who .iname{font-weight:bold; color:#7a3d18; font-size:15px; letter-spacing:.2px;}
+  .who .ename{color:#9a7c50; font-style:italic; font-size:12px;}
   .chap{font-size:13px; color:#7a5c12; font-weight:bold;}
   .spacer{flex:1;}
-  .coins{font-size:15px; font-weight:bold; color:#7a5c12; white-space:nowrap; display:flex; align-items:center; gap:5px;}
-  .coin-ic{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe9a8,#c9a227 70%);border:1.5px solid #8a6b1a;display:inline-block;}
-  .tbtn{
-    border:none; background:var(--sea); color:#fff; font-size:14px; border-radius:999px;
-    padding:9px 14px; box-shadow:0 3px 10px rgba(10,40,50,.3); pointer-events:auto;
-    white-space:nowrap;
+  .coins{font-size:17px; font-weight:bold; color:#6b4a10; white-space:nowrap; display:flex; align-items:center; gap:7px;
+    text-shadow:0 1px 0 rgba(255,255,255,.5);}
+  .coin-ic{
+    width:24px; height:24px; border-radius:50%; display:inline-block; position:relative;
+    background:radial-gradient(circle at 35% 30%,#fff4c6,#ffd869 42%,#c9971f 78%,#a67714);
+    border:2px solid #8a6b1a;
+    box-shadow:0 1px 3px rgba(0,0,0,.4), inset 0 0 0 2px rgba(255,255,255,.28), inset 0 -2px 3px rgba(120,80,10,.5);
   }
-  .tbtn:active{transform:translateY(1px);}
-  .tbtn.warm{background:var(--accent);}
-  .tbtn.gold{background:#a8842a;}
-  .tbtn.gray{background:#6b7a84;}
-  .tbtn.on{background:#20654f; outline:3px solid #ffd76e;}
+  .coin-ic::after{content:""; position:absolute; inset:5px; border-radius:50%;
+    border:1.5px solid rgba(138,107,26,.55); box-shadow:inset 0 1px 2px rgba(255,255,255,.5);}
+  .tbtn{
+    border:2px solid #4a3116; border-radius:13px; color:#fff6e2; font-size:14px; font-weight:700;
+    padding:9px 15px; pointer-events:auto; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.5);
+    background:linear-gradient(#b9814a,#8a5a30);
+    box-shadow:inset 0 2px 0 rgba(255,226,180,.45), inset 0 -3px 6px rgba(0,0,0,.32),
+      0 4px 0 #3c2812, 0 8px 13px rgba(0,0,0,.35);
+    transition:transform .05s, box-shadow .05s;
+  }
+  .tbtn:active{transform:translateY(3px);
+    box-shadow:inset 0 2px 0 rgba(255,226,180,.3), inset 0 -1px 3px rgba(0,0,0,.3), 0 1px 0 #3c2812;}
+  .tbtn.warm{background:linear-gradient(#ec9a5c,#cc6a34); border-color:#7a3d18; box-shadow:inset 0 2px 0 rgba(255,226,180,.45), inset 0 -3px 6px rgba(0,0,0,.3), 0 4px 0 #7a3d18, 0 8px 13px rgba(0,0,0,.35);}
+  .tbtn.gold{background:linear-gradient(#efc75f,#b8892a); border-color:#7a5a18; color:#43310a; text-shadow:0 1px 1px rgba(255,255,255,.35); box-shadow:inset 0 2px 0 rgba(255,244,200,.55), inset 0 -3px 6px rgba(120,80,10,.35), 0 4px 0 #7a5a18, 0 8px 13px rgba(0,0,0,.35);}
+  .tbtn.gray{background:linear-gradient(#93a4ad,#61727a); border-color:#3a474e; box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.28), 0 4px 0 #3a474e, 0 8px 13px rgba(0,0,0,.35);}
+  .tbtn.on{background:linear-gradient(#3aa47c,#1f6650); border-color:#123c30; color:#fff;
+    box-shadow:inset 0 0 0 2px #ffd76e, inset 0 2px 0 rgba(200,255,230,.3), 0 4px 0 #123c30, 0 8px 13px rgba(0,0,0,.35);}
 
   #bubble{
     position:fixed; left:50%; transform:translateX(-50%); bottom:120px; max-width:min(560px,92vw);
-    background:rgba(255,251,239,.97); border:2px solid #e3cf96; border-radius:14px;
-    padding:10px 16px; font-size:15px; line-height:1.45; z-index:30; display:none;
-    box-shadow:0 6px 18px rgba(10,40,50,.35);
+    background:linear-gradient(#fff8e6,#f6e6c0); border:2px solid #a5824a; border-radius:16px;
+    padding:11px 18px; font-size:15px; line-height:1.45; z-index:30; display:none; color:#4a3418;
+    box-shadow:inset 0 0 0 2px #e7d4a2, 0 7px 20px rgba(10,40,50,.42);
   }
   #bubble .spk{font-weight:bold; color:var(--accent); margin-right:6px;}
 
   #toast{
-    position:fixed; top:64px; left:50%; transform:translateX(-50%);
-    background:#20654f; color:#fff; border-radius:999px; padding:8px 18px; font-size:15px;
-    z-index:40; display:none; box-shadow:0 4px 14px rgba(0,0,0,.3);
+    position:fixed; top:66px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(#fbf1d6,#eeddb0); color:#4a3418; border:2px solid #7a5a34;
+    border-radius:999px; padding:8px 18px; font-size:15px; font-weight:600;
+    z-index:40; display:none; box-shadow:inset 0 0 0 2px #d9bd82, 0 4px 14px rgba(0,0,0,.3);
   }
   #ctlhint{
     position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
@@ -71,16 +88,19 @@
     text-shadow:0 1px 3px rgba(0,0,0,.5); pointer-events:none; text-align:center;
   }
   #mini{
-    position:fixed; right:12px; bottom:12px; width:150px; height:110px; z-index:18;
-    border-radius:12px; border:2px solid rgba(250,244,230,.7);
-    box-shadow:0 4px 14px rgba(0,0,0,.35); background:#1f5d6e;
+    position:fixed; right:14px; bottom:14px; width:120px; height:120px; z-index:18;
+    border-radius:50%; border:5px solid #7a5a34; background:#1f5d6e;
+    box-shadow:inset 0 0 0 3px #d9bd82, 0 0 0 3px #5a3d24, 0 6px 16px rgba(0,0,0,.5);
   }
 
   #actionbtn{
     position:fixed; left:50%; transform:translateX(-50%); bottom:64px; z-index:28;
-    display:none; border:none; background:var(--gold); color:#3d2f05; font-weight:bold;
-    font-size:16px; padding:12px 22px; border-radius:999px; box-shadow:0 5px 16px rgba(0,0,0,.35);
+    display:none; border:2px solid #7a5a18; background:linear-gradient(#efc75f,#c9971f); color:#43310a;
+    font-weight:bold; font-size:16px; padding:12px 24px; border-radius:14px;
+    text-shadow:0 1px 1px rgba(255,255,255,.4);
+    box-shadow:inset 0 2px 0 rgba(255,244,200,.6), inset 0 -3px 6px rgba(120,80,10,.3), 0 4px 0 #7a5a18, 0 9px 16px rgba(0,0,0,.4);
   }
+  #actionbtn:active{transform:translateX(-50%) translateY(3px);}
 
   #joy{
     position:fixed; left:18px; bottom:18px; width:130px; height:130px; z-index:25;
@@ -654,8 +674,15 @@ function reg(k,c){SPR[k]=c;}
 function durl(k){if(!DURL[k]){const s=SPR[k];DURL[k]=s?(s.toDataURL?s.toDataURL():(s.src||"")):"";}return DURL[k];}
 
 /* ---------------- nature ---------------- */
-reg("tree",sp(g=>{trunk(g,32,38,7,20);ci(g,32,26,16,"#5fa46f");ci(g,21,32,10,"#5fa46f");
-  ci(g,43,31,9.5,"#5fa46f");ci(g,27,21,4.5,"#8cc79a",false);}));
+reg("tree",sp(g=>{
+  g.beginPath();g.moveTo(28.5,56);g.quadraticCurveTo(30,44,31,34);g.lineTo(33,34);
+  g.quadraticCurveTo(34,44,35.5,56);g.closePath();pth(g,"#9a6b3f");
+  line(g,31.8,52,32.8,40,"#7a4f2c",1.4);
+  leafy(g,32,24,17);pth(g,"#57a06a");                        // lush canopy, one clean outline
+  g.save();leafy(g,32,24,17);g.clip();
+    g.beginPath();g.ellipse(32,33,18,10,0,0,7);g.fillStyle="#3f7d55";g.fill();  // shadowed underside
+    for(const[x,y,r]of[[27,17,5],[35,15,4.4],[31,20,3.6],[23,22,3],[41,22,3]])ci(g,x,y,r,"#8fce82",false);
+  g.restore();}));
 reg("palm",sp(g=>{g.beginPath();g.moveTo(30,58);g.quadraticCurveTo(28,34,36,20);
   g.strokeStyle="#9a6b3f";g.lineWidth=7;g.stroke();g.beginPath();g.moveTo(30,58);
   g.quadraticCurveTo(28,34,36,20);g.strokeStyle=INK;g.lineWidth=1.8;g.stroke();
@@ -1970,31 +1997,39 @@ function renderFP(now){
   if(!motes.length||motes._w!==R3W){initMotes();motes._w=R3W;}
   const horizon=Math.round(R3H*0.44),fl=R3H*0.95,camHt=42,maxView=640;
   const fx=Math.cos(player.ang),fy=Math.sin(player.ang),rx=-fy,ry=fx;
-  /* sky — bright fresh daylight: vivid blue overhead into a pale bright horizon */
-  const sky=g3.createLinearGradient(0,0,0,horizon+6);
-  sky.addColorStop(0,"#4aa6dc");sky.addColorStop(0.46,"#8fcbe8");
-  sky.addColorStop(0.82,"#cfe9e6");sky.addColorStop(1,"rgb("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+")");
-  g3.fillStyle=sky;g3.fillRect(0,0,R3W,horizon+3);
   const fovH=2*Math.atan((R3W/2)/fl);
   function azX(a){let d=a-player.ang;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
     if(Math.abs(d)>fovH*0.9)return null;return R3W/2+Math.tan(d)*fl;}
-  const sx=azX(SUNANG);
-  if(sx!==null){const sy=horizon*0.32;
-    /* bright soft sun bloom */
-    const gl=g3.createRadialGradient(sx,sy,2,sx,sy,R3H*0.5);
-    gl.addColorStop(0,"rgba(255,253,238,0.95)");gl.addColorStop(0.2,"rgba(255,248,214,0.4)");
-    gl.addColorStop(0.5,"rgba(255,248,220,0.14)");gl.addColorStop(1,"rgba(255,248,220,0)");
-    g3.fillStyle=gl;g3.fillRect(0,0,R3W,horizon+10);
-    g3.fillStyle="#fffcee";g3.beginPath();g3.arc(sx,sy,R3H*0.045,0,7);g3.fill();}
-  /* soft, puffy white clouds */
-  for(const[a0,yy,s,al,sp]of[[0.6,0.26,1.2,0.92,0.00001],[2.4,0.44,1.6,0.85,0.000016],
-      [-1.2,0.56,0.9,0.75,0.000012],[3.0,0.20,1.3,0.88,0.000008],[1.6,0.36,0.7,0.6,0.00002]]){
-    const cx2=azX(a0+now*sp);if(cx2===null)continue;const cy2=horizon*yy+Math.sin(now*0.0006+a0)*2;
-    g3.fillStyle="rgba(255,255,255,"+al+")";
-    g3.beginPath();g3.ellipse(cx2,cy2,27*s,10*s,0,0,7);g3.ellipse(cx2-16*s,cy2+3*s,15*s,8*s,0,0,7);
-    g3.ellipse(cx2+17*s,cy2+4*s,16*s,8*s,0,0,7);g3.ellipse(cx2+2*s,cy2-4*s,13*s,7*s,0,0,7);g3.fill();
-    g3.fillStyle="rgba(206,224,230,"+al*0.45+")";
-    g3.beginPath();g3.ellipse(cx2,cy2+6*s,25*s,4*s,0,0,7);g3.fill();}
+  /* drop-in painted sky: assets/sky.png (a wide panorama) pans as you turn and replaces
+     the code sky + sun + clouds. Falls back to the drawn daylight sky. */
+  const skyImg=SPR.sky, skyH=horizon+3;
+  const paintedSky=!!(skyImg&&skyImg.width&&!skyImg.toDataURL);
+  if(paintedSky){
+    const iw=skyImg.naturalWidth||skyImg.width,ih=skyImg.naturalHeight||skyImg.height;
+    const sw=skyH*iw/ih, off=-(((player.ang/(Math.PI*2))%1+1)%1)*sw;
+    for(let x=off-sw;x<R3W+sw;x+=sw)g3.drawImage(skyImg,x,0,sw,skyH);
+  } else {
+    /* sky — bright fresh daylight: vivid blue overhead into a pale bright horizon */
+    const sky=g3.createLinearGradient(0,0,0,horizon+6);
+    sky.addColorStop(0,"#4aa6dc");sky.addColorStop(0.46,"#8fcbe8");
+    sky.addColorStop(0.82,"#cfe9e6");sky.addColorStop(1,"rgb("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+")");
+    g3.fillStyle=sky;g3.fillRect(0,0,R3W,skyH);
+    const sx=azX(SUNANG);
+    if(sx!==null){const sy=horizon*0.32;
+      const gl=g3.createRadialGradient(sx,sy,2,sx,sy,R3H*0.5);
+      gl.addColorStop(0,"rgba(255,253,238,0.95)");gl.addColorStop(0.2,"rgba(255,248,214,0.4)");
+      gl.addColorStop(0.5,"rgba(255,248,220,0.14)");gl.addColorStop(1,"rgba(255,248,220,0)");
+      g3.fillStyle=gl;g3.fillRect(0,0,R3W,horizon+10);
+      g3.fillStyle="#fffcee";g3.beginPath();g3.arc(sx,sy,R3H*0.045,0,7);g3.fill();}
+    for(const[a0,yy,s,al,sp]of[[0.6,0.26,1.2,0.92,0.00001],[2.4,0.44,1.6,0.85,0.000016],
+        [-1.2,0.56,0.9,0.75,0.000012],[3.0,0.20,1.3,0.88,0.000008],[1.6,0.36,0.7,0.6,0.00002]]){
+      const cx2=azX(a0+now*sp);if(cx2===null)continue;const cy2=horizon*yy+Math.sin(now*0.0006+a0)*2;
+      g3.fillStyle="rgba(255,255,255,"+al+")";
+      g3.beginPath();g3.ellipse(cx2,cy2,27*s,10*s,0,0,7);g3.ellipse(cx2-16*s,cy2+3*s,15*s,8*s,0,0,7);
+      g3.ellipse(cx2+17*s,cy2+4*s,16*s,8*s,0,0,7);g3.ellipse(cx2+2*s,cy2-4*s,13*s,7*s,0,0,7);g3.fill();
+      g3.fillStyle="rgba(206,224,230,"+al*0.45+")";
+      g3.beginPath();g3.ellipse(cx2,cy2+6*s,25*s,4*s,0,0,7);g3.fill();}
+  }
   /* ---------------- ground: per-pixel, smooth shores, organic un-banded grass ----------------
      Each ground row is one distance z; we walk it left→right in world space, sampling the soft
      land/grass coverage (bilinear → no stair-steps) and shading water, sand and meadow with
@@ -2229,6 +2264,17 @@ function drawForeGrass(now){
 function drawHands(now){
   const w=innerWidth,h=innerHeight,t=now*0.001;
   const moving=player.moving;
+  /* drop-in painted hands: assets/hands.png (both hands, transparent bg) overrides the
+     drawn hands and is bobbed/swung by the engine. Falls back to the drawn hands. */
+  const himg=SPR.hands;
+  if(himg&&himg.width&&!himg.toDataURL){
+    const iw=himg.naturalWidth||himg.width,ih=himg.naturalHeight||himg.height;
+    const dw=w*1.02,dh=dw*ih/iw;
+    const bob=moving?Math.abs(Math.sin(player.bob*1.15))*14:Math.sin(t*1.7)*4;
+    const sway=moving?Math.sin(player.bob*1.15)*6:Math.sin(t*0.8)*3;
+    ctx.drawImage(himg,(w-dw)/2+sway,h-dh+dh*0.08-bob,dw,dh);
+    return;
+  }
   const breathe=Math.sin(t*1.7);
   const u=Math.min(w,h)*0.17;                       // hand scale unit
   ctx.save();ctx.lineJoin="round";ctx.lineCap="round";
