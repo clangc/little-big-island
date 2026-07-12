@@ -59,3 +59,11 @@ spark=hope/believing before seeing · note=imagination · horn=joy · seed=givin
 - Sequel hook: "There are more islands than you have shouts." / "You weren't the
   first. You won't be the last."
 - Gentle faith undertone is CANON (Kazoo quotes 1 Samuel 16:7; Faith is the 7th treasure).
+
+## AUTHOR'S RULING (Bianca, 2026-07-12 — overrides everything above)
+- **Character style:** stylized 3D animated feature-film look (sculpted CG
+  characters, expressive eyes, warm cinematic light — reference: modern
+  animated epics), NOT flat painterly illustration.
+- **Ages:** ALL six companions are YOUNG ADULTS, carrying the book's
+  personalities (Bright=hope/sarcasm, Kazoo=joy, Patch=love/giving,
+  Grit=confidence, Shaky=courage-while-afraid, Thread=faith/wisdom).
