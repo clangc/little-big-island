@@ -107,6 +107,27 @@ async function nonBlank(page) {
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(SHOTS, '2-turned.png') });
 
+  // stage a populated "hero" scene — the real game has a lived-in island, not an empty meadow
+  await page.evaluate(() => {
+    try {
+      P.coins = 999;
+      const idx = k => ITEMS.findIndex(i => i.k === k);
+      const px = player.x, py = player.y;
+      player.ang = -0.35;
+      const put = (k, dx, dy) => { const i = idx(k); if (i >= 0) P.placed.push({ i, x: Math.round(px + dx), y: Math.round(py + dy), id: 'h' + P.placed.length + k }); };
+      put('house', 150, -30); put('tree', 70, 34); put('tree', 205, 6); put('pine', 250, -34);
+      put('palm', -46, 46); put('rock', -22, 58); put('bench', 26, 92); put('mushroom', 168, 74);
+      put('blossom', 44, 64); put('sunflower', 96, 74); put('tulip', 64, 84); put('rose', 20, 78);
+      put('daisy', 132, 58); put('hibiscus', 112, 90); put('fox', 110, 44); put('deer', 220, 18);
+      for (let a = 0; a < 6.28; a += 0.5) for (let r = 40; r < 360; r += 55) revealAt(px + Math.cos(a) * r, py + Math.sin(a) * r, 90);
+      if (npcs[0]) { npcs[0].x = px + 88; npcs[0].y = py - 6; npcs[0].tx = npcs[0].x; npcs[0].ty = npcs[0].y; }
+      const bb = document.getElementById('bubble'); if (bb) bb.style.display = 'none';
+      miniDirty = true;
+    } catch (e) { console.error('stage err ' + e.message); }
+  });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: path.join(SHOTS, '5-hero.png') });
+
   // sprite gallery — composite key sprites onto an overlay canvas for eyeball review
   await page.evaluate(() => {
     const keys = ['bright','kazoo','patch','grit','shaky','thread',

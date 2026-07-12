@@ -1912,8 +1912,15 @@ function drawSea(now){
     for(let x=0;x<=innerWidth;x+=24){const yy=y+Math.sin((x+now*0.06+i*50)*0.02)*4;
       x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy);}ctx.stroke();}
 }
-const FOGC=[216,229,228];
-const HAZE=[224,231,226];   /* far-distance atmosphere; matches the sky's low edge so the horizon has no seam */
+const FOGC=[221,222,205];
+const HAZE=[236,220,190];   /* warm golden-hour haze; matches the sky's low edge so the horizon has no seam */
+const SUNANG=-2.15;         /* world direction the light comes from (low, warm sun) */
+/* film grain tile — a whisper of texture so nothing reads as flat vector */
+let grainCv=null;
+function makeGrain(){grainCv=mkc(96,96);const gg=grainCv.getContext("2d");
+  const id=gg.createImageData(96,96);for(let i=0;i<id.data.length;i+=4){
+    const v=120+Math.random()*135;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255;}
+  gg.putImageData(id,0,0);}
 /* smooth value noise for organic grass/sand texture (no bands) */
 function vnoise(x,y){
   const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
@@ -1943,27 +1950,42 @@ function renderFP(now){
   if(!motes.length||motes._w!==R3W){initMotes();motes._w=R3W;}
   const horizon=Math.round(R3H*0.44),fl=R3H*0.95,camHt=42,maxView=640;
   const fx=Math.cos(player.ang),fy=Math.sin(player.ang),rx=-fy,ry=fx;
-  /* sky — layered, fading into the far-atmosphere HAZE at the waterline (no seam) */
+  /* sky — golden hour: deep blue overhead melting into warm peach at the waterline */
   const sky=g3.createLinearGradient(0,0,0,horizon+6);
-  sky.addColorStop(0,"#6fb6cf");sky.addColorStop(0.5,"#a6d6dd");
-  sky.addColorStop(0.82,"#d7e6df");sky.addColorStop(1,"rgb("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+")");
+  sky.addColorStop(0,"#3f7ba6");sky.addColorStop(0.42,"#79b0c2");
+  sky.addColorStop(0.7,"#e7c79a");sky.addColorStop(0.88,"#f1d6a8");
+  sky.addColorStop(1,"rgb("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+")");
   g3.fillStyle=sky;g3.fillRect(0,0,R3W,horizon+3);
   const fovH=2*Math.atan((R3W/2)/fl);
   function azX(a){let d=a-player.ang;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
     if(Math.abs(d)>fovH*0.9)return null;return R3W/2+Math.tan(d)*fl;}
-  const sx=azX(-2.2);
-  if(sx!==null){const sy=horizon*0.40;
-    for(const[rr2,al]of[[0.22,0.10],[0.15,0.16],[0.10,0.28]]){
-      g3.fillStyle="rgba(255,238,180,"+al+")";g3.beginPath();g3.arc(sx,sy,R3H*rr2,0,7);g3.fill();}
-    g3.fillStyle="#fff6d4";g3.beginPath();g3.arc(sx,sy,R3H*0.065,0,7);g3.fill();}
-  /* two cloud layers, slowly drifting */
+  const sx=azX(SUNANG);
+  if(sx!==null){const sy=horizon*0.5;
+    /* broad warm bloom */
+    const gl=g3.createRadialGradient(sx,sy,2,sx,sy,R3H*0.62);
+    gl.addColorStop(0,"rgba(255,244,210,0.95)");gl.addColorStop(0.16,"rgba(255,226,164,0.55)");
+    gl.addColorStop(0.45,"rgba(255,210,150,0.2)");gl.addColorStop(1,"rgba(255,205,150,0)");
+    g3.fillStyle=gl;g3.fillRect(0,0,R3W,horizon+30);
+    /* soft god-rays fanning from the sun (clipped to the sky) */
+    g3.save();g3.beginPath();g3.rect(0,0,R3W,horizon+2);g3.clip();
+    g3.translate(sx,sy);
+    for(let i=0;i<12;i++){g3.rotate(Math.PI*2/12);
+      g3.fillStyle="rgba(255,240,198,"+(0.045+0.03*Math.sin(now*0.0009+i*1.7))+")";
+      g3.beginPath();g3.moveTo(0,0);
+      g3.lineTo(Math.cos(0.05)*R3H,Math.sin(0.05)*R3H);
+      g3.lineTo(Math.cos(-0.05)*R3H,Math.sin(-0.05)*R3H);g3.closePath();g3.fill();}
+    g3.restore();
+    /* core */
+    g3.fillStyle="#fff4d2";g3.beginPath();g3.arc(sx,sy,R3H*0.052,0,7);g3.fill();}
+  /* clouds, warm gold on their sunward side */
   for(const[a0,yy,s,al,sp]of[[0.6,0.30,1,0.9,0.00001],[2.4,0.5,1.5,0.8,0.000016],
       [-1.2,0.62,0.8,0.7,0.000012],[3.0,0.22,1.2,0.85,0.000008],[1.6,0.42,0.6,0.5,0.00002]]){
     const cx2=azX(a0+now*sp);if(cx2===null)continue;const cy2=horizon*yy+Math.sin(now*0.0006+a0)*2;
-    g3.fillStyle="rgba(255,255,255,"+al+")";
+    const warm=sx!==null&&cx2>sx;
+    g3.fillStyle=warm?"rgba(255,240,214,"+al+")":"rgba(246,244,236,"+al+")";
     g3.beginPath();g3.ellipse(cx2,cy2,26*s,9*s,0,0,7);g3.ellipse(cx2-15*s,cy2+3*s,14*s,7*s,0,0,7);
     g3.ellipse(cx2+16*s,cy2+4*s,15*s,7*s,0,0,7);g3.fill();
-    g3.fillStyle="rgba(210,232,236,"+al*0.5+")";
+    g3.fillStyle="rgba(196,176,196,"+al*0.5+")";
     g3.beginPath();g3.ellipse(cx2,cy2+5*s,24*s,4*s,0,0,7);g3.fill();}
   /* ---------------- ground: per-pixel, smooth shores, organic un-banded grass ----------------
      Each ground row is one distance z; we walk it left→right in world space, sampling the soft
@@ -1999,19 +2021,30 @@ function renderFP(now){
         const foam=1-Math.abs(cl-0.46)*11;           // bright lapping line at the shore
         if(foam>0){const f=foam*(0.55+0.45*Math.sin(wx*0.08+wy*0.06-tSea*4.5))*(1-fogT);
           if(f>0){r+=(255-r)*f;g+=(255-g)*f;b+=(255-b)*f;}}
-        if(fogT<0.55){const sp=vnoise(wx*0.35-tSea*1.3,wy*0.35);   // sparse sun glints
-          if(sp>0.95){const gl=(sp-0.95)*20;r+=90*gl;g+=90*gl;b+=80*gl;}}
+        if(fogT<0.55){const sp=vnoise(wx*0.35-tSea*1.3,wy*0.35);   // warm gold sun glints
+          if(sp>0.95){const gl=(sp-0.95)*20;r+=104*gl;g+=88*gl;b+=52*gl;}}
       } else {                                        // ---- sand & meadow ----
         const cg=sampleSoft(softGrass,wx,wy);
-        const n1=vnoise(wx*0.04,wy*0.04),n2=vnoise(wx*0.14+40,wy*0.14+40);
-        const nz=(n1*0.68+n2*0.32)-0.5;
-        let sr=236+nz*14,sg=218+nz*14,sb=168+nz*12; // sand
-        const gm=vnoise(wx*0.5,wy*0.5)-0.5;          // fine blade mottle
-        let gr=110+nz*30+gm*12,gg=168+nz*36+gm*18,gb=100+nz*22+gm*8; // meadow
-        const gt=cg<0.3?0:cg>0.72?1:(cg-0.3)/0.42;   // sand→grass ramp inside the land
-        const bt=cl<0.62?(cl-0.5)/0.12:1;            // sand fades in just past the waterline
+        const zone=vnoise(wx*0.012,wy*0.012);         // big warm-sun / cool-shadow patches
+        const n2=vnoise(wx*0.14+40,wy*0.14+40);
+        const nz=(zone*0.6+n2*0.4)-0.5;
+        let sr=239+nz*12,sg=214+nz*12,sb=160+nz*12;  // warm golden sand
+        const wz=zone*zone*(3-2*zone);                // dappled sunlight across the meadow
+        let gr=84+(152-84)*wz,gg=134+(184-134)*wz,gb=92+(94-92)*wz;
+        const gm=vnoise(wx*0.5,wy*0.5)-0.5;           // fine blade mottle
+        gr+=gm*16+nz*10;gg+=gm*20+nz*12;gb+=gm*10+nz*6;
+        const gt=cg<0.3?0:cg>0.72?1:(cg-0.3)/0.42;    // sand→grass ramp inside the land
+        const bt=cl<0.62?(cl-0.5)/0.12:1;             // sand fades in just past the waterline
         r=sr+(gr-sr)*gt;g=sg+(gg-sg)*gt;b=sb+(gb-sb)*gt;
-        if(bt<1){r=232+(r-232)*bt;g=214+(g-214)*bt;b=160+(b-160)*bt;} // wet-sand blend at edge
+        if(bt<1){r=239+(r-239)*bt;g=214+(g-214)*bt;b=160+(b-160)*bt;} // wet-sand blend at edge
+        if(gt>0.6&&fogT<0.62){ /* scattered wildflowers & tufts — a living field, not flat green */
+          const fh=vnoise(wx*0.85+7,wy*0.85+3);
+          if(fh>0.965){const pick=vnoise(wx*3.1,wy*3.1),m=(1-fogT)*0.9;
+            const fc=pick>0.75?[255,236,150]:pick>0.5?[250,250,244]:pick>0.25?[242,142,120]:[238,172,212];
+            r+=(fc[0]-r)*m;g+=(fc[1]-g)*m;b+=(fc[2]-b)*m;}
+          else if(fh<0.05){r*=0.82;g*=0.82;b*=0.8;}   // little shadowed tuft
+          else if(gm>0.34){r+=13;g+=17;b+=7;}         // sunlit blade tip
+        }
       }
       if(fogT>0){r+=(HAZE[0]-r)*fogT;g+=(HAZE[1]-g)*fogT;b+=(HAZE[2]-b)*fogT;}
       const i=row+x*4;
@@ -2022,7 +2055,7 @@ function renderFP(now){
   /* atmospheric haze band right on the horizon → hides any sky/ground seam */
   const hz=g3.createLinearGradient(0,horizon-16,0,horizon+18);
   hz.addColorStop(0,"rgba("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+",0)");
-  hz.addColorStop(0.5,"rgba(233,239,234,0.9)");
+  hz.addColorStop(0.5,"rgba(244,232,206,0.9)");
   hz.addColorStop(1,"rgba("+HAZE[0]+","+HAZE[1]+","+HAZE[2]+",0)");
   g3.fillStyle=hz;g3.fillRect(0,horizon-16,R3W,34);
   /* fog wisps breathing at the edge of sight */
@@ -2096,16 +2129,34 @@ function renderFP(now){
     }
     g3.restore();
   }
-  /* to screen */
+  /* ---------------- to screen + cinematic grade ---------------- */
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(c3,0,0,innerWidth,innerHeight);
-  /* warm vignette */
-  const vg=ctx.createRadialGradient(innerWidth/2,innerHeight*0.55,Math.min(innerWidth,innerHeight)*0.45,
-    innerWidth/2,innerHeight*0.55,Math.max(innerWidth,innerHeight)*0.78);
-  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(24,48,54,.22)");
-  ctx.fillStyle=vg;ctx.fillRect(0,0,innerWidth,innerHeight);
-  if(riding)ctx.fillStyle="rgba(190,230,240,.10)",ctx.fillRect(0,0,innerWidth,innerHeight);
+  const W2=innerWidth,H2=innerHeight;
+  ctx.drawImage(c3,0,0,W2,H2);
+  /* warm golden light washing in from the sun's side of the sky */
+  const sxs=azX(SUNANG);
+  if(sxs!==null){const sunX=sxs/R3W*W2,sunY=horizon*0.5/R3H*H2;
+    const sg=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,Math.max(W2,H2)*0.9);
+    sg.addColorStop(0,"rgba(255,226,150,0.30)");sg.addColorStop(0.35,"rgba(255,206,140,0.12)");
+    sg.addColorStop(1,"rgba(255,200,140,0)");
+    ctx.globalCompositeOperation="lighter";ctx.fillStyle=sg;ctx.fillRect(0,0,W2,H2);
+    ctx.globalCompositeOperation="source-over";}
+  /* unify the palette — a gentle warm wash over the midtones */
+  ctx.globalCompositeOperation="soft-light";
+  ctx.fillStyle="rgba(255,178,96,0.22)";ctx.fillRect(0,0,W2,H2);
+  ctx.globalCompositeOperation="source-over";
+  /* film grain so nothing reads as flat vector */
+  if(!grainCv)makeGrain();
+  ctx.globalCompositeOperation="overlay";ctx.globalAlpha=0.05;
+  const gp=ctx.createPattern(grainCv,"repeat");if(gp){ctx.fillStyle=gp;ctx.fillRect(0,0,W2,H2);}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";
+  /* rich, slightly cool vignette to frame the warm center like a storybook page */
+  const vg=ctx.createRadialGradient(W2/2,H2*0.54,Math.min(W2,H2)*0.38,
+    W2/2,H2*0.54,Math.max(W2,H2)*0.82);
+  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(0.7,"rgba(20,44,52,.12)");vg.addColorStop(1,"rgba(16,36,44,.42)");
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W2,H2);
+  if(riding)ctx.fillStyle="rgba(190,230,240,.10)",ctx.fillRect(0,0,W2,H2);
   drawHands(now);
   if(riding)drawBubbleOverlay(now);
 }
