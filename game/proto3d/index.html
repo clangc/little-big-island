@@ -2,8 +2,10 @@
 <html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>The Island Explorer — 3D island prototype</title>
-<style>html,body{margin:0;height:100%;overflow:hidden;background:#0e3742}#c{display:block;width:100vw;height:100vh}</style>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#0e3742}#c{display:block;width:100vw;height:100vh}
+#hands{position:fixed;left:50%;bottom:-2vh;transform:translateX(-50%);height:52vh;pointer-events:none;z-index:10}</style>
 </head><body><canvas id="c"></canvas>
+<img id="hands" src="../assets/hands.png">
 <script type="module">
 import * as THREE from '../vendor/three.module.js';
 
@@ -96,7 +98,7 @@ ocean.rotation.x=-Math.PI/2;ocean.position.y=WATER;scene.add(ocean);
 /* ---------- a few painted trees, anchored on the grass (billboards in 3D) ---------- */
 const loader=new THREE.TextureLoader();
 const treeTex=loader.load('../assets/tree.png',t=>{t.colorSpace=THREE.SRGBColorSpace;});
-const treeMat=new THREE.SpriteMaterial({map:treeTex});
+const treeMat=new THREE.SpriteMaterial({map:treeTex,alphaTest:0.14});
 const trees=new THREE.Group();
 const trng=mulberry32(SEED+7);
 for(let i=0;i<40;i++){
@@ -109,9 +111,21 @@ for(let i=0;i<40;i++){
 }
 scene.add(trees);
 
-/* ---------- establishing view: from over the south water, looking across the whole island ---------- */
-camera.position.set(0, 120, TERR*1.35);
-camera.lookAt(0, 4, -TERR*0.18);
+/* ---------- painted objects placed on the land (billboards anchored in 3D) ---------- */
+function billboard(url,hgt,x,z,aspect){
+  const tex=loader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;});
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,alphaTest:0.2}));
+  sp.scale.set(hgt*(aspect||1),hgt,1);
+  sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);return sp;
+}
+billboard('../assets/house.png', 44, -70, 150, 1.0);
+billboard('../assets/bright.png', 52, 30, 175, 0.5);
+billboard('../assets/pine.png', 40, 120, 120, 0.7);
+
+/* ---------- first-person view: standing on the meadow, looking across the island ---------- */
+const px=34, pz=250;
+camera.position.set(px, height(px,pz)+11, pz);
+camera.lookAt(-16, 24, -TERR*0.42);
 
 let t0=performance.now();
 function frame(now){
