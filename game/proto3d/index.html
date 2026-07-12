@@ -67,8 +67,8 @@ function setGrowth(t){
   skyU.mid.value=lerpC('#cfd9d8','#c98f6a',t);
   skyU.bot.value=lerpC('#e8ece6','#f4dcaa',t);
   // sun: cool weak → warm golden strong
-  sun.color=lerpC('#e8eef0','#ffdf9e',t); sun.intensity=0.9+t*1.5;
-  hemi.color=lerpC('#dfe8ee','#bfe0ff',t); hemi.groundColor=lerpC('#8a9088','#5a4a2e',t); hemi.intensity=0.9-t*0.15;
+  sun.color=lerpC('#e8eef0','#ffdf9e',t); sun.intensity=1.05+t*1.75;
+  hemi.color=lerpC('#dfe8ee','#bfe0ff',t); hemi.groundColor=lerpC('#8a9088','#5a4a2e',t); hemi.intensity=1.0-t*0.1;
   amb.color=lerpC('#f2f5f2','#fff2d8',t); amb.intensity=0.5-t*0.15;
   // fog: close pale mist → far warm haze (the island "clears up when it gets to see you")
   const fc=lerpC('#dfe5e2','#f2d9a8',t);
@@ -80,11 +80,12 @@ function setGrowth(t){
 }
 
 /* ---------- terrain ---------- */
+const loader0=new THREE.TextureLoader();
 const SEG=260, geo=new THREE.PlaneGeometry(TERR*2.2,TERR*2.2,SEG,SEG);
 geo.rotateX(-Math.PI/2);
 const pos=geo.attributes.position,col=[];
-const cSand=new THREE.Color('#e9d3a0'),cGrass=new THREE.Color('#8aa653'),cLo=new THREE.Color('#5f7d3c'),
-      cRock=new THREE.Color('#7d6f5c'),cHi=new THREE.Color('#9a8b74');
+const cSand=new THREE.Color('#fff5dc'),cGrass=new THREE.Color('#f4ffd8'),cLo=new THREE.Color('#c2d69a'),
+      cRock=new THREE.Color('#cdbfa9'),cHi=new THREE.Color('#e8dcc4');
 for(let i=0;i<pos.count;i++){
   const x=pos.getX(i),z=pos.getZ(i),y=height(x,z);pos.setY(i,y);
   const e=6,dy=height(x+e,z)-height(x-e,z),dz=height(x,z+e)-height(x,z-e);
@@ -97,7 +98,12 @@ for(let i=0;i<pos.count;i++){
 }
 geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
 geo.computeVertexNormals();
-scene.add(new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD})));
+const gtex=new THREE.Texture();gtex.colorSpace=THREE.SRGBColorSpace;
+gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping;gtex.repeat.set(46,46);
+{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
+  const g=c.getContext('2d');g.filter='brightness(2.05) saturate(1.15)';g.drawImage(im,0,0);
+  gtex.image=c;gtex.needsUpdate=true;};im.src='../assets/grass_ground.png';}
+scene.add(new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,map:gtex})));
 
 /* ---------- ocean ---------- */
 const ocean=new THREE.Mesh(new THREE.PlaneGeometry(12000,12000),
@@ -166,12 +172,12 @@ const uTime={value:0};
   gmat.onBeforeCompile=(sh)=>{sh.uniforms.uTime=uTime;
     sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\nfloat swy=sin(uTime*1.7+float(gl_InstanceID)*0.61)*0.22;\ntransformed.x+=swy*transformed.y*0.28;');};
-  const N=4200, inst=new THREE.InstancedMesh(blade,gmat,N);
+  const N=14000, inst=new THREE.InstancedMesh(blade,gmat,N);
   const grng=mulberry32(SEED+31), m=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(),
-        v=new THREE.Vector3(), sc=new THREE.Vector3(), cA=new THREE.Color('#5f8f3a'), cB=new THREE.Color('#94a848');
+        v=new THREE.Vector3(), sc=new THREE.Vector3(), cA=new THREE.Color('#55803a'), cB=new THREE.Color('#89a04e');
   let placed=0;
   for(let i=0;i<N*3&&placed<N;i++){
-    const x=15+(grng()*2-1)*260, z=245+(grng()*2-1)*260, y=height(x,z);
+    const x=15+(grng()*2-1)*420, z=200+(grng()*2-1)*420, y=height(x,z);
     if(y<1.6||y>24)continue;
     e.set((grng()-0.5)*0.2,grng()*Math.PI,(grng()-0.5)*0.25);q.setFromEuler(e);
     const h2=0.55+grng()*0.75; sc.set(0.7+grng()*0.5,h2,1); v.set(x,y,z);
