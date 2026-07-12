@@ -137,10 +137,23 @@ async function nonBlank(page) {
   await page.evaluate(() => { const e = document.getElementById('__gallery'); if (e) e.remove(); });
   await page.waitForTimeout(120);
 
+  // exercise the Build (fly) view + placing a sprite — paths touched by the overhaul
+  await page.evaluate(() => { try { selItem = ITEMS.findIndex(i => i.k === 'tree'); selIsFurn = false; } catch (e) {} });
+  await page.click('#btn_build').catch(() => {});
+  await page.waitForTimeout(500);
+  const buildScene = await page.evaluate(() => { try { return scene; } catch (e) { return '?'; } });
+  if (buildScene !== 'build') fail('Build (fly) view did not open (scene=' + buildScene + ')');
+  await page.evaluate(() => { try { placeAt(player.x + 40, player.y); } catch (e) {} });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(SHOTS, '4-build.png') });
+  const placed = await page.evaluate(() => { try { return P.placed.length; } catch (e) { return -1; } });
+  if (placed < 1) fail('placing a sprite in Build view did not work (placed=' + placed + ')');
+
   if (errors.length) {
     console.error('✗ runtime errors:\n  ' + errors.join('\n  '));
     await browser.close(); srv.close(); process.exit(1);
   }
+  console.log('  build view OK, placed ' + placed + ' sprite(s)');
 
   console.log('✓ smoke OK — scene=fp, save key present, canvas non-blank (' + (frac*100).toFixed(0) + '% varied)');
   console.log('  shots → ' + path.relative(ROOT, SHOTS) + '/');
