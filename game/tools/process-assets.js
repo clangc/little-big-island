@@ -44,7 +44,11 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2];
         const dist = Math.sqrt(dr * dr + dg * dg + db * db);
         let al = dist / T; if (al > 1) al = 1;
-        a[i + 3] = Math.round(al * 255);
+        al = al*al*(3-2*al); a[i + 3] = Math.round(al * 255);
+          if (al > 0.02 && al < 0.999) { const inv=(1-al)*255;
+            a[i]=Math.min(255,Math.max(0,(a[i]-inv)/al));
+            a[i+1]=Math.min(255,Math.max(0,(a[i+1]-inv)/al));
+            a[i+2]=Math.min(255,Math.max(0,(a[i+2]-inv)/al)); }
         if (a[i + 3] > 24) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
       }
       g.putImageData(d, 0, 0);
@@ -81,7 +85,11 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         for (let i = 0; i < a.length; i += 4) {
           const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2];
           let al = Math.sqrt(dr * dr + dg * dg + db * db) / 62; if (al > 1) al = 1;
-          a[i + 3] = Math.round(al * 255);
+          al = al*al*(3-2*al); a[i + 3] = Math.round(al * 255);
+          if (al > 0.02 && al < 0.999) { const inv=(1-al)*255;
+            a[i]=Math.min(255,Math.max(0,(a[i]-inv)/al));
+            a[i+1]=Math.min(255,Math.max(0,(a[i+1]-inv)/al));
+            a[i+2]=Math.min(255,Math.max(0,(a[i+2]-inv)/al)); }
         }
         // keep only the largest connected blob (drops neighbour slivers at the edges)
         const N = bw * h, lab = new Int32Array(N).fill(-1), stack = new Int32Array(N);
@@ -138,7 +146,11 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
       const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
       const g = c.getContext('2d'); g.drawImage(img, 0, 0);
       const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
-      for (let i = 0; i < a.length; i += 4) { const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2]; let al = Math.sqrt(dr * dr + dg * dg + db * db) / 60; if (al > 1) al = 1; a[i + 3] = Math.round(al * 255); }
+      for (let i = 0; i < a.length; i += 4) { const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2]; let al = Math.sqrt(dr * dr + dg * dg + db * db) / 60; if (al > 1) al = 1; al = al*al*(3-2*al); a[i + 3] = Math.round(al * 255);
+          if (al > 0.02 && al < 0.999) { const inv=(1-al)*255;
+            a[i]=Math.min(255,Math.max(0,(a[i]-inv)/al));
+            a[i+1]=Math.min(255,Math.max(0,(a[i+1]-inv)/al));
+            a[i+2]=Math.min(255,Math.max(0,(a[i+2]-inv)/al)); } }
       g.putImageData(d, 0, 0);
       const s = Math.min(1, 1100 / c.width);
       const oc = document.createElement('canvas'); oc.width = Math.round(c.width * s); oc.height = Math.round(c.height * s);

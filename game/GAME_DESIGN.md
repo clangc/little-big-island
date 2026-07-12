@@ -56,3 +56,18 @@ logic (quests, deeds, mirror engine, catalog, saves) carries over unchanged.
 Painted assets (Higgsfield, in the book-cover style — or Bianca's own art,
 which always wins) drop into `game/assets/<key>.png` and override anything.
 `tools/process-assets.js` keys/crops/optimizes uploads.
+
+## Amendments (founder, 2026-07-12 — after book delivery)
+- **The book is in: `docs/CANON.md`** is the game-facing extraction of Bianca's
+  manuscript. The island's geography IS the journey (shore→shell path→cave→cliff→
+  laughing forest→cracked garden→whisper woods→mountain→rising cliff→storm→
+  THE THREAD library→mirror lake). The book always wins.
+- **Hands are contextual.** They appear only when grabbing/interacting (plus a
+  brief settle animation), not permanently. The view belongs to the island.
+- **Nothing may read as a flat cutout.** Pipeline: painted art → image-to-3D
+  (GLB) → toon-shaded mesh in-engine; grass = instanced wind-swayed blades;
+  every object gets a grounding shadow. White-matte defringing is mandatory
+  in asset processing.
+- Character canon discrepancies (book vs current art) recorded in CANON.md:
+  Patch (young boy, not adult gardener), Thread (girl librarian, not old woman),
+  Shaky (nervous boy; knight armor is an adaptation). Founder to rule.

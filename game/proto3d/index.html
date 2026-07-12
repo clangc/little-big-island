@@ -3,9 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>The Island Explorer — 3D slice</title>
 <style>html,body{margin:0;height:100%;overflow:hidden;background:#0e3742}#c{display:block;width:100vw;height:100vh}
-#hands{position:fixed;left:50%;bottom:-2vh;transform:translateX(-50%);height:38vh;pointer-events:none;z-index:10}</style>
+#hands{display:none;position:fixed;left:50%;bottom:-2vh;transform:translateX(-50%);height:38vh;pointer-events:none;z-index:10}</style>
 </head><body><canvas id="c"></canvas>
-<img id="hands" src="../assets/hands.png">
+<img id="hands" src="../assets/hands.png"><script>if(new URLSearchParams(location.search).get('hands'))document.getElementById('hands').style.display='block';</script>
 <script type="module">
 import * as THREE from '../vendor/three.module.js';
 
@@ -126,11 +126,14 @@ pool.rotation.x=-Math.PI/2;pool.position.set(fx,Math.max(0.4,height(fx,fz+26)+0.
 
 /* ---------- painted world objects ---------- */
 const loader=new THREE.TextureLoader();
+const shadowMat=new THREE.MeshBasicMaterial({color:0x1e3018,transparent:true,opacity:0.28,depthWrite:false});
+function blobShadow(x,z,r){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),shadowMat);
+  m.rotation.x=-Math.PI/2;m.position.set(x,height(x,z)+0.35,z);scene.add(m);}
 function billboard(url,hgt,x,z,aspect){
   const tex=loader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;});
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,alphaTest:0.2}));
   sp.scale.set(hgt*(aspect||1),hgt,1);
-  sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);return sp;
+  sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);blobShadow(x,z,hgt*0.30);return sp;
 }
 const treeTex=loader.load('../assets/tree.png',t=>{t.colorSpace=THREE.SRGBColorSpace;});
 const treeMat=new THREE.SpriteMaterial({map:treeTex,alphaTest:0.14});
@@ -140,7 +143,7 @@ for(let i=0;i<46;i++){
   do{x=(trng()*2-1)*TERR*0.7;z=(trng()*2-1)*TERR*0.7;y=height(x,z);k++;}while((y<2||y>30)&&k<50);
   if(y<2||y>30)continue;
   const s=new THREE.Sprite(treeMat);const sc=24+trng()*18;
-  s.scale.set(sc,sc,1);s.position.set(x,y+sc*0.42,z);scene.add(s);
+  s.scale.set(sc,sc,1);s.position.set(x,y+sc*0.42,z);scene.add(s);blobShadow(x,z,sc*0.30);
 }
 billboard('../assets/house.png',48,-85,55,1.0);
 billboard('../assets/bright.png',50,40,60,0.5);
