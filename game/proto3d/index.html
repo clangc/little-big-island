@@ -166,7 +166,7 @@ const brightSp=billboard('../assets/bright.png',50,40,60,0.5);
  gg.fillStyle=grd;gg.fillRect(0,0,64,64);
  const gt=new THREE.CanvasTexture(gc);
  const g=new THREE.Sprite(new THREE.SpriteMaterial({map:gt,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
- g.scale.set(6,6,1);g.position.set(36,height(40,60)+30,61);scene.add(g);
+ g.scale.set(6,6,1);g.position.set(33,height(40,60)+28,56);scene.add(g);
  const gl=new THREE.PointLight(0xffc95e,6,60,1.8);gl.position.copy(g.position);scene.add(gl);}
 billboard('../assets/pine.png',46,120,-40,0.7);
 billboard('../assets/rock.png',24,-28,140,1.1);
