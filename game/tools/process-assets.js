@@ -19,6 +19,9 @@ const up = {
   cast:   U + '7aeed3bd-IMG_1220.png',
   cave:   U + '406c472f-IMG_1221.png',
   hands:  U + 'ace345c0-IMG_1229.png',
+  cottage: U + 'b60bde11-IMG_1222.png',
+  boulder: U + '04757d84-IMG_1233.png',
+  scenery: U + '67e3cea7-IMG_1234.png',
 };
 const dataUrl = f => 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
 const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.from(durl.split(',')[1], 'base64')); console.log('  wrote', name); };
@@ -125,6 +128,8 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   await keyObject('pine', up.pine);
   await keyObject('tree_autumn', up.autumn);
   await keyObject('cave', up.cave, 90);
+  await keyObject('house', up.cottage);
+  await keyObject('rock', up.boulder);
 
   console.log('· hands (keep full frame, just key white)');
   {
@@ -156,6 +161,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   }
   await resizeSave('sky.png', up.sky, 1600);
   await resizeSave('grass_ground.png', up.grass, 1024);
+  await resizeSave('scenery.png', up.scenery, 1800);
 
   console.log('· companions (fixed crop boxes)');
   await keyCast(up.cast, [

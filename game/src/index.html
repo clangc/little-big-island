@@ -2002,9 +2002,22 @@ function renderFP(now){
     if(Math.abs(d)>fovH*0.9)return null;return R3W/2+Math.tan(d)*fl;}
   /* drop-in painted sky: assets/sky.png (a wide panorama) pans as you turn and replaces
      the code sky + sun + clouds. Falls back to the drawn daylight sky. */
+  const scn=SPR.scenery, paintedScn=!!(scn&&scn.width&&!scn.toDataURL);
   const skyImg=SPR.sky, skyH=horizon+3;
   const paintedSky=!!(skyImg&&skyImg.width&&!skyImg.toDataURL);
-  if(paintedSky){
+  if(paintedScn){
+    /* the painted island panorama IS the backdrop: sky, hills, cliffs, waterfall,
+       village, cave. A vertical slice is stretched so its hazy base meets the horizon,
+       panning as you turn. */
+    const iw=scn.naturalWidth||scn.width,ih=scn.naturalHeight||scn.height;
+    const winW=iw*0.6, pf=((player.ang/(Math.PI*2))%1+1)%1, sxp=pf*(iw-winW);
+    const sY=0, sH=ih*0.43;   /* sky + landscape down to the hill baseline (crop out the lower haze) */
+    g3.drawImage(scn,sxp,sY,winW,sH,0,0,R3W,skyH);
+    /* melt the scenery's base into a warm horizon so it meets the meadow with no hard line */
+    const hb=g3.createLinearGradient(0,skyH-Math.round(R3H*0.06),0,skyH);
+    hb.addColorStop(0,"rgba(240,224,190,0)");hb.addColorStop(1,"rgba(244,232,206,0.9)");
+    g3.fillStyle=hb;g3.fillRect(0,skyH-Math.round(R3H*0.06),R3W,Math.round(R3H*0.06)+1);
+  } else if(paintedSky){
     /* slide a window across the wide painted panorama as you turn (seam-free) */
     const iw=skyImg.naturalWidth||skyImg.width,ih=skyImg.naturalHeight||skyImg.height;
     const winW=iw*0.6, pf=((player.ang/(Math.PI*2))%1+1)%1, sxp=pf*(iw-winW);
@@ -2030,16 +2043,6 @@ function renderFP(now){
       g3.ellipse(cx2+17*s,cy2+4*s,16*s,8*s,0,0,7);g3.ellipse(cx2+2*s,cy2-4*s,13*s,7*s,0,0,7);g3.fill();
       g3.fillStyle="rgba(206,224,230,"+al*0.45+")";
       g3.beginPath();g3.ellipse(cx2,cy2+6*s,25*s,4*s,0,0,7);g3.fill();}
-  }
-  /* drop-in painted distant scenery: assets/scenery.png — rolling hills, cliffs, a
-     waterfall, a village, a cave — rises along the horizon and pans as you turn. Its
-     base is hidden behind the near ground, so it reads as real distance. */
-  const scn=SPR.scenery;
-  if(scn&&scn.width&&!scn.toDataURL){
-    const iw=scn.naturalWidth||scn.width,ih=scn.naturalHeight||scn.height;
-    const bandH=Math.round(R3H*0.34);
-    const winW=iw*0.62, pf=((player.ang/(Math.PI*2))%1+1)%1, sxp=pf*(iw-winW);
-    g3.drawImage(scn,sxp,0,winW,ih,0,horizon-bandH+5,R3W,bandH);
   }
   /* ---------------- ground: per-pixel, smooth shores, organic un-banded grass ----------------
      Each ground row is one distance z; we walk it left→right in world space, sampling the soft
