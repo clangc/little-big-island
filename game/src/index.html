@@ -1228,6 +1228,7 @@ let bubbleTimer=null,saveTimer=null,placeCooldown=0,miniDirty=true;
 const cv=document.getElementById("c"),ctx=cv.getContext("2d");
 let DPR=1,R3W=440,R3H=320,g3,c3;
 let groundImg=null,groundH=0;               // reused first-person ground buffer
+let groundTex=null;                          // painted ground texture (assets/grass_ground.png) pixels
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
   cv.width=Math.floor(innerWidth*DPR);cv.height=Math.floor(innerHeight*DPR);
@@ -2052,6 +2053,13 @@ function renderFP(now){
   if(!groundImg||groundH!==gH){groundImg=g3.createImageData(R3W,gH);groundH=gH;}
   const gd=groundImg.data;
   const tSea=now*0.001;
+  /* cache the painted ground texture once it has loaded (assets/grass_ground.png) */
+  if(!groundTex&&SPR.grass_ground&&SPR.grass_ground.width&&!SPR.grass_ground.toDataURL){
+    const im=SPR.grass_ground,tw=im.naturalWidth||im.width,th=im.naturalHeight||im.height;
+    const tc=mkc(tw,th),tg=tc.getContext("2d");tg.drawImage(im,0,0);
+    groundTex={d:tg.getImageData(0,0,tw,th).data,w:tw,h:th};
+  }
+  const GT=groundTex,GREP=300;
   for(let y=gy0;y<R3H;y++){
     const row=(y-gy0)*R3W*4;
     const z=camHt*fl/(y-horizon);
@@ -2087,9 +2095,16 @@ function renderFP(now){
         const nz=(zone*0.6+n2*0.4)-0.5;
         let sr=224+nz*14,sg=200+nz*14,sb=150+nz*12;  // sandy path / dirt
         const wz=zone*zone*(3-2*zone);                // dappled sunlight across the meadow
-        let gr=66+(150-66)*wz,gg=136+(202-136)*wz,gb=64+(80-64)*wz;   // vivid fresh grass
         const gm=vnoise(wx*0.5,wy*0.5)-0.5;           // fine blade mottle
-        gr+=gm*18+nz*10;gg+=gm*26+nz*14;gb+=gm*10+nz*5;
+        let gr,gg,gb;
+        if(GT){ /* painted grass texture, tiled + warm-graded so it matches the golden dusk scene */
+          const u=(((wx%GREP)+GREP)%GREP)/GREP*GT.w|0, v=(((wy%GREP)+GREP)%GREP)/GREP*GT.h|0;
+          const ti=(v*GT.w+u)*4, lit=0.92+wz*0.5;      // dappled sunlight
+          gr=(GT.d[ti]*1.5+34)*lit; gg=(GT.d[ti+1]*1.28+20)*lit; gb=(GT.d[ti+2]*0.78+4)*lit;
+        } else {
+          gr=66+(150-66)*wz;gg=136+(202-136)*wz;gb=64+(80-64)*wz;   // vivid fresh grass (fallback)
+          gr+=gm*18+nz*10;gg+=gm*26+nz*14;gb+=gm*10+nz*5;
+        }
         const gt=cg<0.3?0:cg>0.72?1:(cg-0.3)/0.42;    // sand→grass ramp inside the land
         const bt=cl<0.62?(cl-0.5)/0.12:1;             // sand fades in just past the waterline
         r=sr+(gr-sr)*gt;g=sg+(gg-sg)*gt;b=sb+(gb-sb)*gt;
@@ -2242,9 +2257,9 @@ function drawForeGrass(now){
   const w=innerWidth,h=innerHeight,t=now*0.0012;
   const hsh=x=>{let n=(x*374761)|0;n=(n^(n>>13))*1274126177;return ((n>>>0)&255)/255;};
   const layers=[
-    {base:h+6, hgt:h*0.11, col:"#3c7a46", step:24, bw:8,  sway:5},
-    {base:h+10,hgt:h*0.155,col:"#579c50", step:29, bw:10, sway:8},
-    {base:h+14,hgt:h*0.215,col:"#77c25a", step:35, bw:12, sway:12}
+    {base:h+6, hgt:h*0.15, col:"#47552b", step:22, bw:8,  sway:5},
+    {base:h+10,hgt:h*0.21, col:"#6b7736", step:27, bw:10, sway:8},
+    {base:h+14,hgt:h*0.28, col:"#98a04a", step:33, bw:12, sway:13}
   ];
   ctx.save();ctx.lineJoin="round";
   for(const L of layers){
