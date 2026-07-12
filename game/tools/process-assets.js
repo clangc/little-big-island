@@ -69,8 +69,8 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
 
   // crop the cast lineup into six characters using fixed fractional x-boxes
   // (box edges sit in the white gaps between characters); then key white + trim.
-  async function keyCast(file, boxes) {
-    const durls = await page.evaluate(async ({ src, boxes }) => {
+  async function keyCast(file, boxes, T = 62, lowCut = 0) {
+    const durls = await page.evaluate(async ({ src, boxes, T, lowCut }) => {
       const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
       const w = img.width, h = img.height;
       const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -84,8 +84,8 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         // key white → alpha
         for (let i = 0; i < a.length; i += 4) {
           const dr = 255 - a[i], dg = 255 - a[i + 1], db = 255 - a[i + 2];
-          let al = Math.sqrt(dr * dr + dg * dg + db * db) / 62; if (al > 1) al = 1;
-          al = al*al*(3-2*al); a[i + 3] = Math.round(al * 255);
+          let al = Math.sqrt(dr * dr + dg * dg + db * db) / T; if (al > 1) al = 1;
+          al = al*al*(3-2*al); if (al < lowCut) al = 0; a[i + 3] = Math.round(al * 255);
           if (al > 0.02 && al < 0.999) { const inv=(1-al)*255;
             a[i]=Math.min(255,Math.max(0,(a[i]-inv)/al));
             a[i+1]=Math.min(255,Math.max(0,(a[i+1]-inv)/al));
@@ -111,7 +111,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         let minx = bw, miny = h, maxx = 0, maxy = 0;
         for (let y = 0; y < h; y++) for (let x = 0; x < bw; x++) {
           const p = y * bw + x;
-          if (lab[p] !== best) { a[p * 4 + 3] = 0; }              // erase everything but the main character
+          if (!b.keepAll && lab[p] !== best) { a[p * 4 + 3] = 0; }              // erase everything but the main character
           else { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
         }
         tg.putImageData(d, 0, 0);
@@ -127,7 +127,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
         out[b.name] = oc.toDataURL('image/png');
       }
       return out;
-    }, { src: dataUrl(file), boxes });
+    }, { src: dataUrl(file), boxes, T, lowCut });
     for (const b of boxes) if (durls[b.name]) save(b.name + '.png', durls[b.name]);
   }
 
@@ -175,15 +175,18 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   await resizeSave('grass_ground.png', up.grass, 1024);
   await resizeSave('scenery.png', up.scenery, 1800);
 
-  console.log('· companions (fixed crop boxes)');
-  await keyCast(up.cast, [
-    { name: 'bright', x0: 0.00, x1: 0.20 },
-    { name: 'kazoo',  x0: 0.20, x1: 0.335 },
-    { name: 'patch',  x0: 0.335, x1: 0.495 },
-    { name: 'grit',   x0: 0.495, x1: 0.69 },
-    { name: 'shaky',  x0: 0.69, x1: 0.835 },
-    { name: 'thread', x0: 0.835, x1: 1.00 },
-  ]);
+  console.log('· FINAL CG cast — five from approved sheet, Bright from v3');
+  const CG5 = U + '72e6e22f-IMG_1244.png';
+  const CGB = U + '3d4899b1-IMG_1247.png';
+  await keyCast(CG5, [
+    { name: 'kazoo',  x0: 0.214, x1: 0.360 },
+    { name: 'patch',  x0: 0.360, x1: 0.512 },
+    { name: 'grit',   x0: 0.455, x1: 0.690 },
+    { name: 'shaky',  x0: 0.663, x1: 0.828, keepAll: true },
+    { name: 'thread', x0: 0.828, x1: 1.0 },
+  ], 85, 0.24);
+  await keyCast(CGB, [ { name: 'bright', x0: 0.02, x1: 0.205 } ], 85, 0.24);
+  // (retired) painterly-lineup cast cut — superseded by the FINAL CG cast above
 
   await b.close();
   console.log('done.');
