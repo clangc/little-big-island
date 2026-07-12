@@ -2005,9 +2005,10 @@ function renderFP(now){
   const skyImg=SPR.sky, skyH=horizon+3;
   const paintedSky=!!(skyImg&&skyImg.width&&!skyImg.toDataURL);
   if(paintedSky){
+    /* slide a window across the wide painted panorama as you turn (seam-free) */
     const iw=skyImg.naturalWidth||skyImg.width,ih=skyImg.naturalHeight||skyImg.height;
-    const sw=skyH*iw/ih, off=-(((player.ang/(Math.PI*2))%1+1)%1)*sw;
-    for(let x=off-sw;x<R3W+sw;x+=sw)g3.drawImage(skyImg,x,0,sw,skyH);
+    const winW=iw*0.6, pf=((player.ang/(Math.PI*2))%1+1)%1, sxp=pf*(iw-winW);
+    g3.drawImage(skyImg,sxp,0,winW,ih,0,0,R3W,skyH);
   } else {
     /* sky — bright fresh daylight: vivid blue overhead into a pale bright horizon */
     const sky=g3.createLinearGradient(0,0,0,horizon+6);
@@ -2269,10 +2270,10 @@ function drawHands(now){
   const himg=SPR.hands;
   if(himg&&himg.width&&!himg.toDataURL){
     const iw=himg.naturalWidth||himg.width,ih=himg.naturalHeight||himg.height;
-    const dw=w*1.02,dh=dw*ih/iw;
-    const bob=moving?Math.abs(Math.sin(player.bob*1.15))*14:Math.sin(t*1.7)*4;
-    const sway=moving?Math.sin(player.bob*1.15)*6:Math.sin(t*0.8)*3;
-    ctx.drawImage(himg,(w-dw)/2+sway,h-dh+dh*0.08-bob,dw,dh);
+    const dh=h*0.52,dw=dh*iw/ih;
+    const bob=moving?Math.abs(Math.sin(player.bob*1.15))*16:Math.sin(t*1.7)*5;
+    const sway=moving?Math.sin(player.bob*1.15)*7:Math.sin(t*0.8)*3;
+    ctx.drawImage(himg,(w-dw)/2+sway,h-dh*0.9-bob,dw,dh);
     return;
   }
   const breathe=Math.sin(t*1.7);
