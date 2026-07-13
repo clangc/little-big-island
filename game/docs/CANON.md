@@ -67,3 +67,7 @@ spark=hope/believing before seeing · note=imagination · horn=joy · seed=givin
 - **Ages:** ALL six companions are YOUNG ADULTS, carrying the book's
   personalities (Bright=hope/sarcasm, Kazoo=joy, Patch=love/giving,
   Grit=confidence, Shaky=courage-while-afraid, Thread=faith/wisdom).
+
+## Founder rulings on ages (2026-07-13)
+- Patch is a BOY of about 12 (as in the book), hair fully covering one eye.
+  Not all companions are young adults — ages follow the founder's per-character calls.
