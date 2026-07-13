@@ -27,7 +27,7 @@ const dataUrl = f => 'data:image/png;base64,' + fs.readFileSync(f).toString('bas
 const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.from(durl.split(',')[1], 'base64')); console.log('  wrote', name); };
 
 (async () => {
-  const b = await chromium.launch({ args: ['--no-sandbox'] });
+  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
   const page = await b.newPage();
   await page.setContent('<canvas id="c"></canvas>');
 
@@ -177,21 +177,19 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   await resizeSave('grass_ground.png', up.grass, 1024);
   await resizeSave('scenery.png', up.scenery, 1800);
 
-  console.log('· FINAL CG cast — five from approved sheet, Bright from v3');
-  const CG5 = U + '72e6e22f-IMG_1244.png';
+  console.log('· FINAL CG cast — all six from approved solo sheets');
   const CGB = U + '9d1d43f8-IMG_1251.png';
   const CGK = U + 'f1c7e141-IMG_1252.png';
   const CGP = U + '8bda61d6-IMG_1255.png';
   const CGG = U + '9e99cc79-IMG_1256.png';
   const CGS = U + '30d0fc34-IMG_1258.png';
-  await keyCast(CG5, [
-    { name: 'thread', x0: 0.828, x1: 1.0 },
-  ], 85, 0.24);
+  const CGT = U + '644e2bfc-5917b51c03d5470d80efa44c7ce5a4bb.jpeg';
   await keyCast(CGB, [ { name: 'bright', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   await keyCast(CGK, [ { name: 'kazoo', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   await keyCast(CGP, [ { name: 'patch', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   await keyCast(CGG, [ { name: 'grit', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   await keyCast(CGS, [ { name: 'shaky', x0: 0.0, x1: 1.0, keepAll: true } ], 85, 0.24);
+  await keyCast(CGT, [ { name: 'thread', x0: 0.0, x1: 1.0, keepAll: true } ], 85, 0.24); // keepAll: floating ember motes
   // (retired) painterly-lineup cast cut — superseded by the FINAL CG cast above
 
   await b.close();
