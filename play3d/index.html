@@ -3,10 +3,119 @@
 <base href="/play3d/"><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>The Island Explorer — 3D slice</title>
-<style>html,body{margin:0;height:100%;overflow:hidden;background:#0e3742}#c{display:block;width:100vw;height:100vh}
-#hands{display:none;position:fixed;left:50%;bottom:-2vh;transform:translateX(-50%);height:38vh;pointer-events:none;z-index:10}</style>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Georgia,'Times New Roman',serif;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#c{display:block;width:100vw;height:100vh}
+#hands{display:none;position:fixed;left:50%;bottom:-2vh;transform:translateX(-50%);height:38vh;pointer-events:none;z-index:10}
+
+/* ============ ornate HUD (leather · parchment · gold) ============ */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:20;display:none}
+.panel{background:linear-gradient(172deg,#6b4226 0%,#4c2d15 55%,#3a2110 100%);
+  border:2px solid #caa04e;border-radius:14px;
+  box-shadow:0 3px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,230,170,.35),inset 0 -6px 14px rgba(0,0,0,.3)}
+#plaque{position:absolute;top:10px;left:10px;padding:8px 14px 10px 60px;pointer-events:auto;min-width:170px}
+#avatar{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;
+  border:2px solid #e8c064;background:radial-gradient(circle at 38% 34%,#fff6d8 0%,#ffd76a 34%,#e08a2d 78%,#8a4d12 100%);
+  box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 0 8px rgba(255,255,255,.6)}
+#hud_name{color:#ffe9b0;font-weight:bold;font-size:15px;text-shadow:0 1px 2px #000}
+.chbadge{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:9px;font-size:11.5px;color:#3c2508;
+  background:linear-gradient(#ffe08a,#d9a33c);border:1px solid #8a5c14;font-weight:bold}
+.coinrow{display:flex;align-items:center;gap:6px;margin-top:5px}
+.coin{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffcf3d 45%,#c78f18 90%);
+  border:1px solid #8a5c14;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+#hud_coins{color:#ffe08a;font-weight:bold;font-size:14.5px;text-shadow:0 1px 2px #000}
+#xpbar{flex:1;height:8px;min-width:56px;border-radius:5px;background:#2a1608;border:1px solid #8a5c14;overflow:hidden}
+#xpfill{display:block;height:100%;width:0;background:linear-gradient(#9fe06a,#4f9c2e);border-radius:4px}
+#banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);pointer-events:none;
+  background:linear-gradient(#f7e9c4,#e8d09a);border:2px solid #a8823f;border-radius:5px;
+  padding:5px 26px;color:#4a2c0e;font-weight:bold;font-size:15px;letter-spacing:.4px;
+  box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 0 12px rgba(160,120,50,.25);white-space:nowrap;max-width:44vw;overflow:hidden;text-overflow:ellipsis}
+#clockbox{position:absolute;top:10px;right:10px;padding:6px 12px;text-align:right;pointer-events:auto}
+#hud_time{color:#ffe9b0;font-size:13px;font-weight:bold;text-shadow:0 1px 2px #000}
+#hud_day{color:#d9b268;font-size:11.5px}
+#mini{position:absolute;top:64px;right:10px;width:104px;height:104px;border-radius:50%;overflow:hidden;pointer-events:auto;
+  border:3px solid #caa04e;box-shadow:0 3px 10px rgba(0,0,0,.5),inset 0 0 10px rgba(0,0,0,.5);background:#1c4a5e}
+#minicv{width:100%;height:100%}
+#questpanel{position:absolute;top:180px;right:10px;width:190px;pointer-events:auto;overflow:hidden}
+.qp-head{background:linear-gradient(#8a5a2c,#6b4226);color:#ffe9b0;font-weight:bold;font-size:13px;
+  padding:6px 10px;border-bottom:1px solid #caa04e;text-shadow:0 1px 2px #000;display:flex;justify-content:space-between;cursor:pointer}
+#qp_list{background:linear-gradient(#f7e9c4,#eed9a8);padding:6px 9px 8px;font-size:12px;color:#4a2c0e}
+#qp_list .qrow{margin:4px 0;line-height:1.35;cursor:pointer}
+#qp_list .qrow b{font-size:12px}
+#qp_list .st{display:block;font-size:10.5px;color:#8a6a30;font-style:italic}
+#qp_list .st.ok{color:#3e7a22;font-weight:bold;font-style:normal}
+#nav{position:absolute;right:8px;bottom:8px;display:flex;gap:7px;pointer-events:auto}
+#nav button{width:58px;height:60px;border:2px solid #caa04e;border-radius:12px;cursor:pointer;
+  background:linear-gradient(172deg,#6b4226,#4c2d15 60%,#3a2110);color:#ffe9b0;
+  box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,230,170,.35);
+  font-family:inherit;font-size:10.5px;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+#nav button .ic{font-size:22px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+#nav button:active{transform:translateY(1px)}
+@media (max-width:520px){
+  #questpanel{width:168px;top:170px}
+  #nav{left:8px;right:8px;justify-content:space-between}
+  #nav button{flex:1;max-width:64px}
+  #banner{top:auto;bottom:78px;font-size:13px;max-width:60vw}
+}
+
+/* ============ parchment modals · toast · speech ============ */
+#veil{position:fixed;inset:0;background:rgba(20,10,4,.55);display:none;z-index:40;align-items:center;justify-content:center}
+#veil.show{display:flex}
+#modal{width:min(480px,92vw);max-height:84vh;overflow:auto;padding:20px 22px;border-radius:16px;
+  background:linear-gradient(#f9edcc,#eed9a8);border:3px solid #b98d3f;color:#43290d;
+  box-shadow:0 14px 50px rgba(0,0,0,.6),inset 0 0 30px rgba(170,130,60,.25)}
+#modal .kicker{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#a07a35;font-weight:bold}
+#modal h1{margin:6px 0 8px;font-size:23px;color:#4a2c0e}
+#modal .sub{font-size:14px;line-height:1.5;color:#5d3d18}
+#modal .qtext{font-size:17px;line-height:1.5;font-weight:bold;margin:10px 0;color:#3c2508}
+#modal .qvoice{font-style:italic;background:rgba(255,244,210,.8);border-left:4px solid #caa04e;
+  padding:8px 10px;margin:10px 0;border-radius:6px;font-size:13.5px;line-height:1.45}
+#modal .deed{display:flex;gap:10px;margin:10px 0;padding:9px;border-radius:10px;background:rgba(255,246,220,.75);
+  border:1px solid #d3ac5e;font-size:13px;line-height:1.4}
+#modal .deed.done{opacity:.62}#modal .deed.locked{opacity:.5}
+#modal .deed .dt{font-weight:bold;font-size:14px}
+#modal .deed .st{font-size:11.5px;color:#8a6a30;font-style:italic;margin-top:2px}
+#modal .btnrow{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+#modal button{font-family:inherit;font-weight:bold;font-size:15px;border-radius:11px;cursor:pointer;padding:11px 16px;
+  border:2px solid #8a5c14;background:linear-gradient(#f9e7ae,#dfb559);color:#43290d;box-shadow:0 3px 7px rgba(0,0,0,.3)}
+#modal button.warm{background:linear-gradient(#ffd98a,#e8952f);flex:1}
+#modal button.ghost{background:transparent;border-color:#b98d3f;color:#7a5a25}
+#modal button.sm{font-size:12.5px;padding:7px 10px;margin-top:6px}
+#modal input{font-family:inherit;font-size:16px;width:100%;box-sizing:border-box;margin:5px 0 12px;padding:10px;
+  border-radius:9px;border:2px solid #b98d3f;background:#fff8e2;color:#43290d}
+#modal .prow{display:block;width:100%;text-align:left;margin:6px 0}
+#toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:50;display:none;max-width:86vw;
+  background:rgba(42,24,8,.94);border:2px solid #caa04e;color:#ffe9b0;border-radius:12px;padding:9px 15px;
+  font-size:13.5px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+#bubble{position:fixed;left:50%;bottom:140px;transform:translateX(-50%);z-index:30;display:none;max-width:78vw;
+  background:linear-gradient(#f9edcc,#eed9a8);border:2px solid #b98d3f;color:#43290d;border-radius:14px;
+  padding:10px 15px;font-size:14px;line-height:1.45;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#bubble .spk{font-weight:bold;color:#8a5714}
+</style>
 </head><body><canvas id="c"></canvas>
 <img id="hands" src="assets/hands.png"><script>if(new URLSearchParams(location.search).get('hands'))document.getElementById('hands').style.display='block';</script>
+<div id="hud">
+  <div id="plaque" class="panel"><div id="avatar"></div>
+    <div><span id="hud_name"></span><span class="chbadge" id="hud_ch"></span></div>
+    <div class="coinrow"><span class="coin"></span><span id="hud_coins">0</span><div id="xpbar"><i id="xpfill"></i></div></div>
+  </div>
+  <div id="banner"><span id="hud_island"></span></div>
+  <div id="clockbox" class="panel"><div id="hud_time"></div><div id="hud_day"></div></div>
+  <div id="mini"><canvas id="minicv" width="208" height="208"></canvas></div>
+  <div id="questpanel" class="panel"><div class="qp-head" id="qp_head"><span>Active Quests</span><span id="qp_tog">–</span></div><div id="qp_list"></div></div>
+  <div id="nav">
+    <button data-nav="quest"><span class="ic">📜</span>Quest</button>
+    <button data-nav="deeds"><span class="ic">🏅</span>Deeds</button>
+    <button data-nav="build"><span class="ic">🔨</span>Build</button>
+    <button data-nav="map"><span class="ic">🗺️</span>Map</button>
+    <button data-nav="sound"><span class="ic">🔊</span>Sound</button>
+    <button data-nav="switch"><span class="ic">🚪</span>Switch</button>
+  </div>
+</div>
+<div id="veil"><div id="modal"></div></div>
+<div id="toast"></div>
+<div id="bubble"></div>
 <script type="module">
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
@@ -326,7 +435,8 @@ billboard('assets/rock.png',24,-28,140,1.1);
 const COMPANIONS=[];
 function companion(key,hgt,x,z,ch,extras){
   const sp=billboard(`assets/${key}.png`,hgt,x,z,0.5);
-  COMPANIONS.push({sp,ch,extras:extras||[]});return sp;
+  sp.userData.npc=key;
+  COMPANIONS.push({sp,ch,key,extras:extras||[]});return sp;
 }
 companion('bright',16, 24,168, 1);
 {const gc=document.createElement('canvas');gc.width=gc.height=64;      // Bright's spark
@@ -419,4 +529,415 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.fov=innerHeight>innerWidth?70:60;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-</script></body></html>
+
+/* ================================================================
+   THE GAME — the real systems from /play, living in the 3D island.
+   Save format is tlbi_explorer_v2, byte-compatible with the 2.5D game.
+   ================================================================ */
+const SHOWCASE=Q.has('growth');            // ?growth= keeps the pure-scenery mode for screenshots
+
+const MEM={};
+const store={
+  get(k){try{const v=localStorage.getItem(k);return v===null?(MEM[k]??null):v;}catch(e){return MEM[k]??null;}},
+  set(k,v){MEM[k]=v;try{localStorage.setItem(k,v);}catch(e){}}
+};
+
+/* ---- tiny synthesised audio (ported from /play) ---- */
+const SFX=(()=>{
+  let ac=null,master=null,ambient=null,ambientWanted=false;
+  let muted=store.get("tlbi_muted")==="1";
+  function actx(){
+    if(muted)return null;
+    if(!ac){try{const AC=window.AudioContext||window.webkitAudioContext;ac=new AC();
+      master=ac.createGain();master.gain.value=0.5;master.connect(ac.destination);}catch(e){ac=null;}}
+    if(ac&&ac.state==="suspended")ac.resume();
+    return ac;
+  }
+  function tone(freq,dur,type,vol,slideTo,delay){
+    const a=actx();if(!a)return;
+    const t0=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();
+    o.type=type||"sine";o.frequency.setValueAtTime(freq,t0);
+    if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t0+dur);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol||0.3,t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g);g.connect(master);o.start(t0);o.stop(t0+dur+0.03);
+  }
+  function seqq(freqs,dur,type,vol,gap){freqs.forEach((f,i)=>tone(f,dur,type,vol,null,i*(gap||0.07)));}
+  function setAmbient(on){
+    ambientWanted=on;const a=actx();if(!a)return;
+    if(ambient){try{ambient.src.stop();}catch(e){}ambient=null;}
+    if(!on)return;
+    const buf=a.createBuffer(1,a.sampleRate*2,a.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.5;
+    const src=a.createBufferSource();src.buffer=buf;src.loop=true;
+    const lp=a.createBiquadFilter();lp.type="lowpass";lp.frequency.value=430;
+    const g=a.createGain();g.gain.value=0.03;
+    src.connect(lp);lp.connect(g);g.connect(master);src.start();
+    ambient={src};
+  }
+  return {
+    get muted(){return muted;},
+    unlock(){const a=actx();if(a&&ambientWanted&&!ambient)setAmbient(true);},
+    ambient:setAmbient,
+    toggleMute(){muted=!muted;store.set("tlbi_muted",muted?"1":"0");
+      if(muted){if(ambient){try{ambient.src.stop();}catch(e){}ambient=null;}if(master)master.gain.value=0;}
+      else{if(master)master.gain.value=0.5;actx();if(ambientWanted)setAmbient(true);}
+      return muted;},
+    coin(){tone(880,0.09,"square",0.14);tone(1320,0.12,"square",0.11,null,0.06);},
+    quest(){seqq([523,659,784,1047],0.5,"sine",0.15);},
+    big(){seqq([392,523,659,784,1047],0.7,"sine",0.17,0.09);},
+    chime(){tone(1047,0.45,"sine",0.11);}
+  };
+})();
+let _audioBooted=false;
+addEventListener("pointerdown",()=>{if(!_audioBooted){_audioBooted=true;SFX.unlock();}},{passive:true});
+
+/* ---- the book's systems (identical data to /play — saves carry over) ---- */
+const TRE={
+  spark:{name:"The Spark",who:"Bright"},horn:{name:"The Horn",who:"Kazoo"},
+  note:{name:"The Note",who:"The Note itself"},seed:{name:"The Seed",who:"Patch"},
+  wing:{name:"The Wing",who:"Grit"},shield:{name:"The Shield",who:"Shaky"},thread:{name:"The Thread",who:"Thread"}
+};
+const QUESTS=JSON.parse(document.getElementById('questdata').textContent);
+const PRAISE={
+  spark:["Pocket sunrise. Called it.","See? The island just got a little clearer.","Not bad for someone who doesn't even pack snacks.","I'm putting this in my guide report. Five stars."],
+  horn:["HA! I heard that laugh from HERE!","That deserves a horn blast! Sorry, tree.","Ten out of ten! The tree is STILL giggling!","You win Try Not To Laugh. Everyone loses. It's wonderful."],
+  note:["The Note hums, pleased. Still no keeper. Still suspicious. Still beautiful.","The map's blank edge just got smaller. You did that.","Somewhere, an unimagined thing thanks you for imagining it."],
+  seed:["Somewhere, a raisin is proud of you.","That's exactly how gardens start. Exactly like that.","Small gift. Counts double. Rules are rules.","Something just sprouted in the cracked ground. Go look."],
+  wing:["BEHOLD! I told you. I TOLD you.","The mountain saw that. It's impressed. It won't say so. But it is.","New record. The clouds are giving you a high-five."],
+  shield:["My thumbs-up is shaking. It still counts. It counts DOUBLE.","You did it scared. That's the best way anyone has ever done anything.","The forest whispered 'you can't.' The forest owes you an apology."],
+  thread:["Everything holds a little tighter now.","I've read this exact page before. It ends well.","The treasures drifted a little closer together just now. That was you."]
+};
+const NPCS=[
+ {k:"bright",name:"Bright",ch:1,arrive:"A man in a blue shirt bows too deeply. Professional guide, amateur disaster.",lines:[
+   "I'm a professional guide, amateur disaster. I only get us lost on odd-numbered days.",
+   "House rule: you don't get to see the island until the island gets to see you. So keep walking.",
+   "Sorry about the dragon poop. That one's on me.",
+   "Don't grab the light. …Fine. Grab it. That works too."]},
+ {k:"kazoo",name:"Kazoo",ch:2,arrive:"Someone is singing, beautifully, and getting closer. Oh no. Oh YES. It's Kazoo.",lines:[
+   "Why did the turtle cross the road?! We don't know — it's STILL CROSSING!",
+   "Wanna play Try Not To Laugh? You'll lose. Everyone loses. It's the best.",
+   "Hellooo-o-o! What about youuu?",
+   "A bubble big enough to carry us? That's not silly. That's TRANSPORTATION."]},
+ {k:"patch",name:"Patch",ch:3,arrive:"A boy in a straw hat is planting something small and stubborn in the cracked ground.",lines:[
+   "Raisin? It's somehow the nicest thing all day.",
+   "The cracked ground isn't broken. It's waiting for something small and stubborn.",
+   "Save half for whoever needs it later. That's the whole trick."]},
+ {k:"grit",name:"Grit",ch:5,arrive:"Somebody yells BEHOLD! from somewhere unnecessarily high up. Grit has arrived.",lines:[
+   "BEHOLD! Say it with your arms up. It works better with the arms.",
+   "Falling is just flying with a bad ending. So fix the ending.",
+   "The mountain didn't get smaller. You got braver. Common mix-up."]},
+ {k:"shaky",name:"Shaky",ch:7,arrive:"A knight with a very large shield walks up. The shield is shaking. The knight came anyway.",lines:[
+   "I'm not NOT scared. I'm just walking forward at the same time.",
+   "My shield shakes. It still counts. It counts DOUBLE.",
+   "The dark counted to twenty before I did. Rematch tomorrow."]},
+ {k:"thread",name:"Thread",ch:9,arrive:"A woman with a spool of golden thread smiles like she's read this page before.",lines:[
+   "Everything on this island is tied to everything else. You especially.",
+   "I've read this exact page before. It ends well.",
+   "A tiny promise, kept, holds more weight than a giant one, forgotten."]}
+];
+const DEEDS=[
+ {id:"bubble",ch:2,title:"The Bubble Vehicle",task:"Make up a BRAND-NEW joke — invented by you, not one you heard — and tell it to somebody.",voice:"Kazoo: “A bubble big enough to ride? That's not silly, that's TRANSPORTATION. Pay the toll: one original joke.”",btn:"I told my brand-new joke",reward:{type:"item"}},
+ {id:"waterfall",ch:3,title:"The Waterfall",task:"Make TEN different people laugh. Real laughs. Count them here — come tap the button after every laugh.",voice:"The cliff says it will only pour if it hears enough laughing. Cliffs are weird like that.",counter:10,btn:"Somebody laughed! (+1)",reward:{type:"item"}},
+ {id:"cat",ch:7,title:"Save the Cat",task:"Somewhere on your island, a cat is stuck in a tree, meowing dramatically. To be brave enough to climb up: do something scary in real life first. The safe kind of scary — voice-shaking, not bone-breaking.",voice:"Shaky (from far away): “Scared is allowed. Scared is the point.”",btn:"I did the scary thing",reward:{type:"cat"}},
+ {id:"hornstatue",ch:4,title:"The Horn Statue",task:"Do something properly funny in front of at least TWO people. On purpose. With witnesses.",voice:"Kazoo: “Statues are earned in laughs. That's just the law.”",btn:"They saw it. They laughed.",reward:{type:"item"}},
+ {id:"shore",ch:5,title:"The New Shore — your island GROWS",task:"Do three kind things for three different people, all in ONE day.",voice:"Patch: “That's exactly how gardens start. And apparently, coastlines.”",btn:"Three kindnesses. One day. Done.",reward:{type:"expand"}},
+ {id:"lighthouse",ch:6,title:"The Lighthouse",task:"Help someone who didn't ask for help — notice what they need before they say it.",voice:"Thread: “Light the way for somebody. The tower is just the trophy.”",btn:"I noticed. I helped.",reward:{type:"item"}},
+ {id:"meadow",ch:7,title:"The Far Meadow — the island GROWS again",task:"Keep the same promise three days in a row. Same promise. Three days. In a row.",voice:"Thread: “Anyone can promise once. Three in a row is how thread becomes rope.”",btn:"Three days. Promise held.",reward:{type:"expand"}},
+ {id:"skycave",ch:9,title:"The Sky Cave — the island GROWS one last time",task:"Teach somebody something they truly couldn't do before you taught them.",voice:"Grit: “BEHOLD! …No, not you. Them. Make somebody else yell it.”",btn:"They can do it now",reward:{type:"expand"}}
+];
+const HANDCOLORS=["#f2c9a1","#d9a06b","#a9713f","#7a4b26","#f6b8c8","#9fd4a8","#9db8e8"];
+const chapterOf=done=>Math.min(10,1+Math.floor(done/5));
+const TORDER=["spark","horn","note","seed","wing","shield","thread"];
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function newDeck(rng){const idx=[...QUESTS.keys()];
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}return idx;}
+
+/* ---- state & save (same DB, gentle with fields the 2.5D game owns) ---- */
+const SAVE_KEY="tlbi_explorer_v2", OLD_KEY="tlbi_explorer_v1";
+let DB=JSON.parse(store.get(SAVE_KEY)||"null");
+if(!DB){
+  DB={profiles:[]};
+  const old=JSON.parse(store.get(OLD_KEY)||"null");
+  if(old&&old.profiles)old.profiles.forEach((p,i)=>DB.profiles.push({
+    id:p.id,name:p.name,islandName:p.islandName,seed:p.seed,coins:p.coins,
+    placed:p.placed||[],interiors:p.interiors||{},revealed:p.revealed||[],found:p.found||[],
+    deck:p.deck,deckPos:p.deckPos,activeQuest:p.activeQuest??null,doneCount:p.doneCount||0,epoch:p.epoch||1,
+    hand:HANDCOLORS[i%HANDCOLORS.length],birthM:null,birthD:null,chapter:chapterOf(p.doneCount||0),
+    deeds:{},expansions:0,lastBday:null,bdayUnlocked:false,metNpcs:[]
+  }));
+}
+let P=null,saveTimer=null;
+function save(){if(saveTimer)return;saveTimer=setTimeout(()=>{saveTimer=null;store.set(SAVE_KEY,JSON.stringify(DB));},400);}
+
+/* ---- UI helpers ---- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function showModal(h){$("modal").innerHTML=h;$("veil").classList.add("show");}
+function hideModal(){$("veil").classList.remove("show");}
+window.hideModal=hideModal;
+$("veil").addEventListener("pointerdown",e=>{if(e.target===$("veil")&&P)hideModal();});
+let toastTimer=null,bubbleTimer=null;
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display="none",2600);}
+function bubble(spk,msg,ms){const b=$("bubble");
+  b.innerHTML='<span class="spk">'+esc(spk)+':</span> '+esc(msg);b.style.display="block";
+  clearTimeout(bubbleTimer);bubbleTimer=setTimeout(()=>b.style.display="none",ms||5600);}
+function confetti(){for(let i=0;i<26;i++){const d=document.createElement("div");
+  d.style.cssText="position:fixed;z-index:60;width:9px;height:13px;pointer-events:none;border-radius:2px;"+
+    "left:"+(20+Math.random()*60)+"vw;top:-4vh;background:hsl("+Math.floor(Math.random()*360)+",85%,62%);"+
+    "transition:transform "+(1.3+Math.random()*1.2)+"s ease-in,opacity .4s "+(1.6+Math.random())+"s";
+  document.body.appendChild(d);
+  requestAnimationFrame(()=>{d.style.transform="translateY("+(60+Math.random()*50)+"vh) rotate("+(Math.random()*720-360)+"deg)";d.style.opacity="0";});
+  setTimeout(()=>d.remove(),3200);}}
+
+/* ---- HUD ---- */
+function hudUI(){
+  $("hud_name").textContent=P.name;
+  $("hud_ch").textContent="Chapter "+P.chapter;
+  $("hud_coins").textContent=P.coins;
+  $("hud_island").textContent=P.islandName;
+  $("xpfill").style.width=(P.chapter>=10?100:(P.doneCount%5)/5*100)+"%";
+  questPanelUI();
+}
+function clockUI(){
+  const n=new Date();let h=n.getHours();const am=h<12?"AM":"PM";h=h%12||12;
+  $("hud_time").textContent=h+":"+String(n.getMinutes()).padStart(2,"0")+" "+am;
+  const ts=parseInt((P.id||"p0").slice(1),36);
+  const day=isFinite(ts)?Math.max(1,Math.floor((Date.now()-ts)/864e5)+1):1;
+  $("hud_day").textContent="Day "+day;
+}
+function questPanelUI(){
+  let h="";let n=1;
+  const q=P.activeQuest!==null?QUESTS[P.activeQuest]:null;
+  if(q)h+='<div class="qrow" data-open="quest"><b>'+n+++'. Today\'s Quest</b><span class="st">'+esc(q[1].slice(0,52))+'…<br>(Show a grown-up!)</span></div>';
+  else if(P.deckPos<P.deck.length)h+='<div class="qrow" data-open="quest"><b>'+n+++'. Draw today\'s quest</b><span class="st">A new one is waiting</span></div>';
+  for(const d of DEEDS){
+    if(P.chapter<d.ch||P.deeds[d.id]==="done")continue;
+    const prog=typeof P.deeds[d.id]==="number"?" · "+P.deeds[d.id]+"/"+d.counter:"";
+    h+='<div class="qrow" data-open="deeds"><b>'+n+++'. '+esc(d.title)+'</b><span class="st">(Pending'+prog+')</span></div>';
+    if(n>4)break;
+  }
+  const doneDeeds=DEEDS.filter(d=>P.deeds[d.id]==="done").length;
+  if(doneDeeds)h+='<div class="qrow"><span class="st ok">✓ '+doneDeeds+' Big Deed'+(doneDeeds>1?"s":"")+' confirmed</span></div>';
+  $("qp_list").innerHTML=h||'<div class="qrow"><span class="st">All caught up. Go play outside!</span></div>';
+  document.querySelectorAll("#qp_list [data-open]").forEach(r=>r.onclick=()=>r.dataset.open==="quest"?openQuest():openDeeds());
+}
+$("qp_head").onclick=()=>{const l=$("qp_list");const on=l.style.display!=="none";
+  l.style.display=on?"none":"block";$("qp_tog").textContent=on?"+":"–";};
+
+/* ---- minimap: the real island, seen from above ---- */
+const miniBase=document.createElement("canvas");miniBase.width=miniBase.height=208;
+function renderMiniBase(){
+  const g=miniBase.getContext("2d"),S=208,R=520;
+  for(let py=0;py<S;py++)for(let px2=0;px2<S;px2++){
+    const wx=(px2/S*2-1)*R,wz=(py/S*2-1)*R,y=height(wx,wz);
+    let c;
+    if(y<0.4)c="#2e7d9c";else if(y<1.4)c="#7fd0c9";else if(y<2.4)c="#e9d8a6";
+    else if(y<20)c=(y%6<3)?"#5d9440":"#548a3a";else if(y<40)c="#7d9450";else c="#b8ab8c";
+    g.fillStyle=c;g.fillRect(px2,py,1,1);
+  }
+}
+function drawMini(){
+  const cv2=$("minicv"),g=cv2.getContext("2d");
+  g.drawImage(miniBase,0,0);
+  const S=208,R=520,mx=(px/R+1)/2*S,mz=(pz/R+1)/2*S;
+  for(const c of COMPANIONS){if(!c.sp.visible)continue;
+    const nx2=(c.sp.position.x/R+1)/2*S,nz2=(c.sp.position.z/R+1)/2*S;
+    g.fillStyle="#ffd76a";g.beginPath();g.arc(nx2,nz2,3.4,0,Math.PI*2);g.fill();
+    g.strokeStyle="#7a4b10";g.lineWidth=1;g.stroke();}
+  g.save();g.translate(mx,mz);g.rotate(ang);
+  g.fillStyle="#fff";g.strokeStyle="#333";g.lineWidth=1.5;
+  g.beginPath();g.moveTo(0,-7);g.lineTo(5,5);g.lineTo(-5,5);g.closePath();g.fill();g.stroke();g.restore();
+}
+setInterval(()=>{if(P&&!SHOWCASE)drawMini();},600);
+setInterval(()=>{if(P&&!SHOWCASE)clockUI();},20000);
+$("mini").onclick=()=>openMap();
+function openMap(){
+  showModal('<div class="kicker">your island · seen from above</div><h1>'+esc(P.islandName)+'</h1>'+
+    '<div style="text-align:center"><canvas id="bigmap" width="208" height="208" style="width:min(78vw,340px);border-radius:14px;border:3px solid #b98d3f"></canvas></div>'+
+    '<p class="sub">Gold dots are your companions, waiting at their story places. The little arrow is you.</p>'+
+    '<div class="btnrow"><button class="warm" onclick="hideModal()">Back to walking</button></div>');
+  const g=$("bigmap").getContext("2d");g.drawImage(miniBase,0,0);
+  const S=208,R=520;
+  for(const c of COMPANIONS){if(!c.sp.visible)continue;
+    g.fillStyle="#ffd76a";g.beginPath();g.arc((c.sp.position.x/R+1)/2*S,(c.sp.position.z/R+1)/2*S,4,0,Math.PI*2);g.fill();}
+  g.fillStyle="#fff";g.beginPath();g.arc((px/R+1)/2*S,(pz/R+1)/2*S,4,0,Math.PI*2);g.fill();
+}
+
+/* ---- quests (the real deck — put the screen down, go do it) ---- */
+function chapterGrowth(){return (P.chapter-1)/9;}
+function chapterUp(nc){
+  const arrivals=NPCS.filter(n=>n.ch>(P.chapter||1)&&n.ch<=nc);
+  P.chapter=nc;save();hudUI();
+  setGrowth(chapterGrowth());              // THE LIGHT GROWS WITH THE CHILD
+  let h='<div class="kicker">the story turns a page</div><h1>Chapter '+nc+'</h1>'+
+    '<p class="sub">The light over your island just changed. Look around when you\'re back.</p>';
+  arrivals.forEach(n=>{h+='<div class="deed"><div><div class="dt">'+n.name+' has arrived!</div>'+
+    '<div class="dd">'+esc(n.arrive)+'</div></div></div>';});
+  DEEDS.filter(d=>d.ch===nc).forEach(d=>{h+='<div class="deed"><div><div class="dt">New Big Deed: '+d.title+'</div>'+
+    '<div class="dd">Open Deeds to see what it takes.</div></div></div>';});
+  if(nc>=10)h+='<div class="qvoice">The Note begins to hum. It never hums. The keeper it was waiting for is <b>you</b>. It was you the entire book. Welcome to Chapter 10, keeper.</div>';
+  h+='<div class="btnrow"><button class="warm" onclick="hideModal()">Keep going</button></div>';
+  setTimeout(()=>{confetti();showModal(h);},600);
+}
+function openQuest(){
+  if(P.activeQuest===null&&P.deckPos>=P.deck.length){
+    showModal('<div class="kicker">unbelievable. actually believable.</div><h1>You did ALL '+QUESTS.length+' quests!</h1>'+
+      '<div class="qvoice">Bright tips his hat. Kazoo blasts the horn. Thread smiles like she read this page long ago.</div>'+
+      '<div class="btnrow"><button class="warm" id="q_reshuffle">Shuffle the deck and go again</button>'+
+      '<button class="ghost" onclick="hideModal()">Keep exploring</button></div>');
+    $("q_reshuffle").onclick=()=>{P.epoch++;P.deck=newDeck(mulberry32(P.seed+P.epoch*77));P.deckPos=0;save();hideModal();openQuest();};
+    return;
+  }
+  if(P.activeQuest===null){P.activeQuest=P.deck[P.deckPos];save();}
+  const q=QUESTS[P.activeQuest],T=TRE[q[0]];
+  showModal('<div class="kicker">today\'s quest · out there, not in here</div>'+
+    '<div class="qtext">'+esc(q[1])+'</div>'+
+    '<p class="sub">'+T.name+' · with '+T.who+'. Put the screen down, go do it for real, then come back. '+
+    'House rule from the book: the island grows when it SEES you — so show a grown-up or a friend.</p>'+
+    '<div class="btnrow"><button class="warm" id="q_wit">Somebody saw it! (+12 coins, the island grows)</button></div>'+
+    '<div class="btnrow"><button id="q_solo">I did it, but nobody saw (+8 coins)</button>'+
+    '<button class="ghost" onclick="hideModal()">Later</button></div>'+
+    '<p class="sub" style="opacity:.75">Quest '+(P.deckPos+1)+' of '+P.deck.length+' in this deck · done so far: '+P.doneCount+'</p>');
+  const finish=wit=>{
+    const tr=q[0];
+    P.coins+=wit?12:8;P.doneCount++;P.deckPos++;P.activeQuest=null;
+    P.mir[tr][wit?"w":"s"]++;save();
+    hideModal();confetti();SFX.quest();SFX.coin();
+    const who=NPCS.find(n=>n.name===TRE[tr].who);
+    const spk=(who&&who.ch>P.chapter)?"The island":TRE[tr].who;
+    bubble(spk,PRAISE[tr][Math.floor(Math.random()*PRAISE[tr].length)],6000);
+    toast(wit?"+12 coins · the island saw you. It grew a little.":"+8 coins · it counts! But the island only GROWS when somebody sees.");
+    const nc=chapterOf(P.doneCount);
+    hudUI();
+    if(nc>P.chapter)chapterUp(nc);
+  };
+  $("q_wit").onclick=()=>finish(true);
+  $("q_solo").onclick=()=>finish(false);
+}
+
+/* ---- big deeds (grown-up sized real-life stuff) ---- */
+function openDeeds(){
+  let h='<div class="kicker">big deeds · big real-life stuff earns big island stuff</div><h1>Big Deeds</h1>';
+  DEEDS.forEach(d=>{
+    const done=P.deeds[d.id]==="done",locked=P.chapter<d.ch;
+    const prog=typeof P.deeds[d.id]==="number"?P.deeds[d.id]:0;
+    h+='<div class="deed'+(done?" done":locked?" locked":"")+'"><div>'+
+      '<div class="dt">'+d.title+(done?" — DONE":"")+'</div>';
+    if(locked)h+='<div class="st">Locked — reaches you at Chapter '+d.ch+'</div>';
+    else if(done)h+='<div class="st">'+(d.reward.type==="expand"?"Your island grew!":d.reward.type==="cat"?"The cat follows you around now.":"Earned, forever.")+'</div>';
+    else{
+      h+='<div class="dd">'+esc(d.task)+'</div><div class="st">'+esc(d.voice)+'</div>';
+      if(d.counter)h+='<div class="st">Laughs so far: <b>'+prog+' of '+d.counter+'</b></div>';
+      h+='<button class="sm" data-deed="'+d.id+'">'+esc(d.btn)+'</button>';
+    }
+    h+='</div></div>';
+  });
+  h+='<div class="btnrow"><button class="ghost" onclick="hideModal()">Back to the island</button></div>';
+  showModal(h);
+  document.querySelectorAll("[data-deed]").forEach(b=>b.onclick=()=>doDeed(b.dataset.deed));
+}
+function doDeed(id){
+  const d=DEEDS.find(x=>x.id===id);
+  if(d.counter){
+    const v=(typeof P.deeds[id]==="number"?P.deeds[id]:0)+1;
+    if(v<d.counter){P.deeds[id]=v;save();openDeeds();hudUI();
+      toast("Laugh "+v+" of "+d.counter+"! Keep going!");return;}
+  }
+  P.deeds[id]="done";save();SFX.big();confetti();hudUI();
+  if(d.reward.type==="expand"){
+    P.expansions=(P.expansions||0)+1;save();
+    showModal('<div class="kicker">the ground rumbles politely</div><h1>Your island GREW.</h1>'+
+      '<p class="sub">A whole new piece of land rose out of the sea, because of something kind and real you did out there. It\'s hiding in the fog.</p>'+
+      '<div class="btnrow"><button class="warm" onclick="hideModal()">Go explore it</button></div>');
+  }else if(d.reward.type==="cat"){
+    showModal('<div class="kicker">rescue complete</div><h1>You saved the cat!</h1>'+
+      '<p class="sub">You did the scary thing, so you were brave enough to climb. The cat pretends it was fine the whole time. Cats.</p>'+
+      '<div class="qvoice">Shaky: "Your voice shook and you did it anyway. That\'s the whole trick. That\'s the entire trick."</div>'+
+      '<div class="btnrow"><button class="warm" onclick="hideModal()">Hi, cat</button></div>');
+  }else{
+    showModal('<div class="kicker">earned, not bought</div><h1>'+d.title+' is yours!</h1>'+
+      '<p class="sub">Nobody can buy this. It only exists because of what you did out there.</p>'+
+      '<div class="btnrow"><button class="warm" onclick="hideModal()">Beautiful</button></div>');
+  }
+}
+
+/* ---- start screen: choose or create an explorer (same profiles as /play) ---- */
+function showStart(){
+  $("hud").style.display="none";SFX.ambient(false);
+  let h='<div class="kicker">world &amp; words © Bianca · the little big island</div><h1>Who\'s exploring today?</h1>';
+  if(DB.profiles.length){
+    DB.profiles.forEach(p=>{h+='<button class="prow" data-id="'+p.id+'">'+esc(p.name)+
+      ' <span style="font-weight:normal;font-size:12px;opacity:.75">· Chapter '+p.chapter+' · '+p.coins+' coins · '+esc(p.islandName)+'</span></button>';});
+    h+='<div class="btnrow"><button class="ghost" id="f_new">+ New explorer</button></div>';
+    showModal(h);
+    document.querySelectorAll("#modal .prow").forEach(b=>b.onclick=()=>{P=DB.profiles.find(p=>p.id===b.dataset.id);enterIsland();});
+    $("f_new").onclick=()=>showCreate();
+  } else showCreate();
+}
+function showCreate(){
+  showModal('<div class="kicker">a new island rises from the sea</div><h1>Name your explorer</h1>'+
+    '<p class="sub">Your name</p><input id="f_name" maxlength="16" autocomplete="off">'+
+    '<p class="sub">Your island\'s name (optional)</p><input id="f_island" maxlength="22" autocomplete="off">'+
+    '<div class="btnrow"><button class="warm" id="f_go">Walk on my island</button></div>');
+  $("f_go").onclick=()=>{
+    const nm=$("f_name").value.trim(),isl=$("f_island").value.trim();
+    if(!nm){$("f_name").focus();return;}
+    const seed=hash(nm+"|"+isl+"|"+Date.now());
+    P={id:"p"+Date.now().toString(36),name:nm,islandName:isl||(nm+"'s Island"),seed,
+      coins:60,placed:[],interiors:{},revealed:[],found:[],
+      deck:newDeck(mulberry32(seed+1)),deckPos:0,activeQuest:null,doneCount:0,epoch:1,
+      hand:HANDCOLORS[0],birthM:null,birthD:null,chapter:1,deeds:{},expansions:0,
+      lastBday:null,bdayUnlocked:false,metNpcs:["bright"]};
+    DB.profiles.push(P);save();
+    enterIsland();
+  };
+}
+function enterIsland(){
+  hideModal();
+  P.mir=P.mir||{};TORDER.forEach(t=>P.mir[t]=P.mir[t]||{w:0,s:0});
+  $("hud").style.display="block";
+  setGrowth(chapterGrowth());
+  hudUI();clockUI();drawMini();
+  SFX.ambient(true);
+  setTimeout(()=>bubble("Bright","Welcome"+(P.doneCount?" back":"")+", "+P.name+"! Walk into the world — the island clears up when it gets to see you."),700);
+}
+
+/* ---- nav ---- */
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
+  const k=b.dataset.nav;
+  if(k==="quest")openQuest();
+  else if(k==="deeds")openDeeds();
+  else if(k==="map")openMap();
+  else if(k==="sound"){const m=SFX.toggleMute();b.querySelector(".ic").textContent=m?"🔇":"🔊";toast(m?"Sound off":"Sound on");}
+  else if(k==="switch")showStart();
+  else if(k==="build")showModal('<div class="kicker">the build table</div><h1>Being rebuilt for the 3D island</h1>'+
+    '<p class="sub">Everything you placed on your island is saved and safe. The Build table returns here soon — in full 3D.</p>'+
+    '<div class="btnrow"><button class="warm" onclick="hideModal()">Okay!</button></div>');
+});
+
+/* ---- tap a companion to talk ---- */
+const ray=new THREE.Raycaster(),tapV=new THREE.Vector2();
+let downAt=null;
+addEventListener('pointerdown',e=>{downAt={x:e.clientX,y:e.clientY,t:Date.now()};});
+addEventListener('pointerup',e=>{
+  if(!P||SHOWCASE||!downAt)return;
+  if(Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)>10||Date.now()-downAt.t>400)return;
+  tapV.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
+  ray.setFromCamera(tapV,camera);
+  const hits=ray.intersectObjects(COMPANIONS.filter(c=>c.sp.visible).map(c=>c.sp));
+  if(hits.length){
+    const key=hits[0].object.userData.npc,n=NPCS.find(x=>x.k===key);
+    if(n){bubble(n.name,n.lines[Math.floor(Math.random()*n.lines.length)],6000);SFX.chime();
+      if(!P.metNpcs.includes(key)){P.metNpcs.push(key);save();}}
+  }
+});
+
+/* ---- boot ---- */
+renderMiniBase();
+if(!SHOWCASE)showStart();
+</script>
+<script type="application/json" id="questdata">[["spark","Go outside and find something tiny and beautiful. A ladybug counts double."],["spark","Find the prettiest thing in your house that nobody ever looks at. Look at it properly."],["spark","Watch the sky for two whole minutes. Come back and report the best cloud."],["spark","Find something that glows or shines and show it to somebody."],["spark","Say one good thing about today OUT LOUD before dinner."],["spark","Find a spot of sunlight on the floor and stand in it like it's a stage."],["spark","Tomorrow morning, notice the FIRST good thing that happens. Keep it all day."],["spark","Find three things outside that are your favorite color."],["spark","Ask someone older about the best day they ever had. Listen to the whole thing."],["spark","Draw the sunrise or the sunset — imagining it is allowed."],["spark","Find a stone that looks like it's keeping a secret. Keep it somewhere safe."],["spark","When something goes wrong today, find one tiny okay thing hiding inside it."],["spark","Right after it rains, go out and find something that looks brand new."],["spark","Count the stars for one minute tonight. No stars? Count the lights."],["spark","Tell someone about something you're looking forward to."],["horn","Make a grown-up laugh. For real. Fake laughs don't count."],["horn","Invent a brand-new silly dance and perform it for someone."],["horn","Tell your best joke to somebody. Don't have one? Make one up right now."],["horn","Sing a song wrong ON PURPOSE until someone smiles."],["horn","Have a funny-face contest. Lose dramatically or win gloriously."],["horn","Find the funniest word you know and use it three times today."],["horn","Do a boring task in the silliest way possible. (Still finish it, though.)"],["horn","Give your pet or a stuffed animal a ridiculous new name. Use it all day."],["horn","Laugh at yourself once today — kindly."],["horn","Teach somebody a game you invented. The rules may be ridiculous."],["horn","Talk in a funny accent for five whole minutes."],["horn","Draw the silliest animal that doesn't exist. Name it."],["horn","Find someone grumpy and get them to at least almost-smile."],["horn","Hop everywhere instead of walking for ten minutes."],["horn","Tell a story where every sentence must be sillier than the last one."],["note","Imagine an animal nobody has ever seen. Describe it to someone."],["note","Invent a machine that fixes your most annoying problem. Draw the plans."],["note","Look at a cloud and decide what it's REALLY building up there."],["note","The map has blank edges. Make up what's there — land nobody's imagined yet."],["note","Design your dream bedroom out loud. No budget. Gravity optional."],["note","Invent a new holiday. What do people eat? What do they yell?"],["note","Ask 'what if…?' about something ordinary and follow it for five minutes."],["note","Make up the life story of the oldest thing in your house."],["note","Invent the ice cream flavor that SHOULD exist but doesn't."],["note","Close your eyes and design an island for someone you love."],["note","If today were a movie — what's the title? Who plays you?"],["note","Build something out of whatever's in the room. Give it a name."],["note","Invent a secret word with a friend. Use it like it's normal."],["note","Decide what your future self is doing exactly ten years from today."],["note","Make up a song about something boring until it stops being boring."],["seed","Get someone a glass of water BEFORE they ask. Sneaky kindness is the best kindness."],["seed","Give something away today. Something real — not something broken."],["seed","Do a chore that isn't yours and don't tell anyone."],["seed","Make or draw something for someone. Actually give it to them."],["seed","Thank someone for a thing they always do that nobody notices."],["seed","Share your snack. The good part. Not the crumbs."],["seed","Help someone younger with something that's hard for them and easy for you."],["seed","Water a plant. Or a garden. Or one slightly sad-looking tree."],["seed","Ask someone 'how was your day?' and listen without interrupting once."],["seed","Leave a kind note where someone will find it."],["seed","Feed some birds, or leave water out for animals on a hot day."],["seed","Give somebody your spot — the good chair, the front seat, the first turn."],["seed","Hug someone who needs it. (Check first. Then really hug.)"],["seed","Tell someone in your family one exact thing you love about them."],["seed","Pick up three pieces of trash that aren't yours."],["wing","Try the thing you failed at last time. One more try. Today."],["wing","Show somebody something you made — even if it isn't finished."],["wing","Stand tall, arms up, and yell 'BEHOLD!' before doing something hard."],["wing","Practice something for ten minutes that you wish you were better at."],["wing","Answer a question out loud even if you're not 100% sure."],["wing","Teach someone something you're good at."],["wing","Do the hard part FIRST today, not last."],["wing","Write down three things you can do now that you couldn't do a year ago."],["wing","Balance on one foot longer than yesterday. No yesterday? Start the record."],["wing","Say 'I made this' without adding 'it's bad' after it."],["wing","Race someone. Actually try to win."],["wing","Fix something small that's been broken for ages."],["wing","Learn one word in another language and use it at dinner."],["wing","Beat your own record at anything you can measure."],["wing","When you make a mistake today, say 'interesting!' instead of 'I'm terrible.'"],["shield","Do the thing you've been avoiding. You know the one. Scared is allowed — scared is the point."],["shield","Say sorry for something FIRST, before anyone asks you to."],["shield","Try a food you already decided you hate. One real bite."],["shield","Ask a question in front of people, even if your voice shakes."],["shield","Tell someone the truth about something small you fibbed about."],["shield","Go somewhere slightly dark (with permission) and count to twenty like a legend."],["shield","Introduce yourself to someone you don't know well. First name minimum."],["shield","Stand up for someone today, even in a small way."],["shield","Let someone else go first when you REALLY wanted to be first."],["shield","Try the big slide, the high branch, the deep end — the safe-but-scary one. Grown-up nearby."],["shield","Say 'I don't know' out loud once today. It's braver than pretending."],["shield","Ask for help with something you've been struggling with alone."],["shield","Watch the scary-ish part without covering your eyes. Blinking allowed."],["shield","Do your least favorite chore without being asked twice."],["shield","Tell someone one thing you're afraid of. Fears shrink when you say them."],["thread","Keep a promise today. Even a tiny one. ESPECIALLY a tiny one."],["thread","Finish something you started and abandoned."],["thread","Call or write to someone you haven't talked to in a while."],["thread","Make your bed like you mean it. Tomorrow: again."],["thread","Remember something someone told you last week — and ask them about it."],["thread","Put something back exactly where it belongs. Then two more things."],["thread","Make a plan with someone and ACTUALLY do the plan."],["thread","Say 'I'll be there in one minute' — and be there in one minute."],["thread","Do the same kind thing for the same person two days in a row."],["thread","Tie together things that belong together. Socks count. Families count double."],["thread","Thank the person who always shows up for you."],["thread","Take care of something living today. And again tomorrow."],["thread","When you say 'just five more minutes' — keep it to five. Time yourself."],["thread","Ask the oldest person you know for a story from before you existed."],["thread","Show someone how to do the thing they keep forgetting. Light the way."]]</script>
+</body></html>
