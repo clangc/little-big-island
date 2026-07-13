@@ -32,8 +32,8 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   await page.setContent('<canvas id="c"></canvas>');
 
   // white-key a single object sprite → transparent PNG (trimmed to content), capped size
-  async function keyObject(name, file, thresh = 62, maxDim = 720) {
-    const durl = await page.evaluate(async ({ src, T, maxDim }) => {
+  async function keyObject(name, file, thresh = 62, maxDim = 720, erode = 0) {
+    const durl = await page.evaluate(async ({ src, T, maxDim, erode }) => {
       const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
       const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
       const g = c.getContext('2d'); g.drawImage(img, 0, 0);
@@ -51,6 +51,16 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
             a[i+2]=Math.min(255,Math.max(0,(a[i+2]-inv)/al)); }
         if (a[i + 3] > 24) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
       }
+      // contract the alpha edge: kills the last white fringe pixels on canopies
+      for (let e = 0; e < erode; e++) {
+        const src2 = new Uint8ClampedArray(a);
+        for (let y = 1; y < c.height - 1; y++) for (let x = 1; x < c.width - 1; x++) {
+          const p = (y * c.width + x) * 4 + 3;
+          if (src2[p] === 0) continue;
+          const m = Math.min(src2[p - 4], src2[p + 4], src2[p - c.width * 4], src2[p + c.width * 4]);
+          if (m < src2[p]) a[p] = Math.round(src2[p] * 0.25 + m * 0.75);
+        }
+      }
       g.putImageData(d, 0, 0);
       // trim to content bbox with small padding
       const pad = 6;
@@ -63,7 +73,7 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
       const og = oc.getContext('2d'); og.imageSmoothingQuality = 'high';
       og.drawImage(c, minx, miny, w, h, 0, 0, ow, oh);
       return oc.toDataURL('image/png');
-    }, { src: dataUrl(file), T: thresh, maxDim });
+    }, { src: dataUrl(file), T: thresh, maxDim, erode });
     save(name + '.png', durl);
   }
 
@@ -134,9 +144,9 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   }
 
   console.log('· object sprites');
-  await keyObject('tree', up.tree);
-  await keyObject('pine', up.pine);
-  await keyObject('tree_autumn', up.autumn);
+  await keyObject('tree', up.tree, 62, 720, 2);
+  await keyObject('pine', up.pine, 62, 720, 2);
+  await keyObject('tree_autumn', up.autumn, 62, 720, 2);
   await keyObject('cave', up.cave, 90);
   await keyObject('house', up.cottage);
   await keyObject('rock', up.boulder);

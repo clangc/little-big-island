@@ -154,7 +154,7 @@ for(let i=0;i<pos.count;i++){
 geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
 geo.computeVertexNormals();
 const gtex=new THREE.Texture();gtex.colorSpace=THREE.SRGBColorSpace;
-gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping;gtex.repeat.set(46,46);
+gtex.wrapS=gtex.wrapT=THREE.MirroredRepeatWrapping;gtex.repeat.set(46,46);
 gtex.anisotropy=renderer.capabilities.getMaxAnisotropy();
 {const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
   const g=c.getContext('2d');g.filter='brightness(2.05) saturate(1.15)';g.drawImage(im,0,0);
@@ -276,7 +276,9 @@ function billboard(url,hgt,x,z,aspect){
   sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);
   sp.userData.shadow=blobShadow(x,z,hgt*0.30);return sp;
 }
-const mkTreeMat=u=>new THREE.SpriteMaterial({map:loader.load(u,t=>{t.colorSpace=THREE.SRGBColorSpace;}),alphaTest:0.14});
+function groundY(x,z){let m=height(x,z);            // lowest point under the footprint — nothing floats
+  for(const[dx,dz] of [[4,0],[-4,0],[0,4],[0,-4]])m=Math.min(m,height(x+dx,z+dz));return m;}
+const mkTreeMat=u=>new THREE.SpriteMaterial({map:loader.load(u,t=>{t.colorSpace=THREE.SRGBColorSpace;}),alphaTest:0.3});
 const treeMat=mkTreeMat('../assets/tree.png'),pineMat=mkTreeMat('../assets/pine.png'),autumnMat=mkTreeMat('../assets/tree_autumn.png');
 const trng=mulberry32(SEED+7);
 const roundTrees=[];                                    // flat cutouts near the player get 3D-lifted below
@@ -286,16 +288,18 @@ for(let i=0;i<40;i++){
   while((y<2||y>30||Math.hypot(x-15,z-235)<80)&&k<50);
   if(y<2||y>30)continue;
   const kind=trng();let mat=treeMat,asp=1;              // pines climb, one autumn tree remembers
-  if(y>16&&kind<0.5){mat=pineMat;asp=0.7;}else if(kind<0.12){mat=autumnMat;}
-  const s=new THREE.Sprite(mat);const sc=46+trng()*26;  // a tree is 3–4.5× a person, not a bush
-  s.scale.set(sc*asp,sc,1);s.position.set(x,y+sc*0.42,z);scene.add(s);blobShadow(x,z,sc*0.30);
+  let sc=46+trng()*26;                                  // a tree is 3–4.5× a person, not a bush
+  if(y>16&&kind<0.5){mat=pineMat;asp=0.62;sc=80+trng()*36;}   // pines tower over the round trees
+  else if(kind<0.12){mat=autumnMat;}
+  const s=new THREE.Sprite(mat);const gy=groundY(x,z);
+  s.scale.set(sc*asp,sc,1);s.position.set(x,gy+sc*0.40,z);scene.add(s);blobShadow(x,z,sc*0.30);
   if(mat===treeMat&&Math.hypot(x-15,z-235)<420)roundTrees.push({s,x,z,sc});
 }
 /* ---------- the real tree: painted art lifted to a 3D mesh (Higgsfield image_to_3d) ---------- */
 new GLTFLoader().load('../assets/models/tree.glb',g=>{
   const root=g.scene;
   root.traverse(o=>{if(o.isMesh){const old=o.material;
-    o.material=new THREE.MeshToonMaterial({map:old.map||null,gradientMap:GRAD});
+    o.material=new THREE.MeshToonMaterial({map:old.map||null,color:0xd6ddbf,gradientMap:GRAD});  // settle the lime toward the painted palette
     if(o.material.map)o.material.map.colorSpace=THREE.SRGBColorSpace;}});
   const bb=new THREE.Box3().setFromObject(root);
   const size=bb.getSize(new THREE.Vector3()), ctr=bb.getCenter(new THREE.Vector3());
@@ -307,7 +311,7 @@ new GLTFLoader().load('../assets/models/tree.glb',g=>{
     const inst=proto.clone();
     inst.scale.setScalar(t.sc/size.y);
     inst.rotation.y=rrng()*Math.PI*2;
-    inst.position.set(t.x,height(t.x,t.z)-0.4,t.z);
+    inst.position.set(t.x,groundY(t.x,t.z)-0.5,t.z);
     scene.add(inst);
   }
 });
@@ -345,7 +349,7 @@ companion('thread',16, 100,-250, 9);
     const g=c.getContext('2d'),gr2=mulberry32(SEED+77);
     for(let i=0;i<9;i++){const bx=20+gr2()*88,tipx=bx+(gr2()*2-1)*34,w=5+gr2()*5,h3=70+gr2()*50;
       const grad=g.createLinearGradient(0,128,0,128-h3);
-      grad.addColorStop(0,'#2c5519');grad.addColorStop(0.7,'#4e7a26');grad.addColorStop(1,'#7fa040');
+      grad.addColorStop(0,'#39641f');grad.addColorStop(0.7,'#5b842c');grad.addColorStop(1,'#8cab48');
       g.fillStyle=grad;g.beginPath();
       g.moveTo(bx-w,128);g.quadraticCurveTo(bx-w*0.4,128-h3*0.6,tipx,128-h3);
       g.quadraticCurveTo(bx+w*0.4,128-h3*0.6,bx+w,128);g.closePath();g.fill();}
@@ -355,19 +359,19 @@ companion('thread',16, 100,-250, 9);
   gmat.onBeforeCompile=(sh)=>{sh.uniforms.uTime=uTime;
     sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\nfloat swy=sin(uTime*1.7+float(gl_InstanceID)*0.61)*0.22;\ntransformed.x+=swy*transformed.y*0.28;');};
-  const N=9000, grng=mulberry32(SEED+31);
+  const N=14000, grng=mulberry32(SEED+31);
   const instA=new THREE.InstancedMesh(card,gmat,N), instB=new THREE.InstancedMesh(card,gmat,N);
   const m=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(),
         v=new THREE.Vector3(), sc=new THREE.Vector3(), tint=new THREE.Color();
   let placed=0;
   for(let i=0;i<N*3&&placed<N;i++){
-    const x=15+(grng()*2-1)*300, z=200+(grng()*2-1)*300, y=height(x,z);
+    const x=15+(grng()*2-1)*330, z=200+(grng()*2-1)*330, y=height(x,z);
     if(y<1.6||y>24)continue;
     const ry=grng()*Math.PI, s2=0.75+grng()*0.65;
-    v.set(x,y-0.1,z); sc.set(s2,0.7+grng()*0.6,1);
+    v.set(x,y-0.3,z); sc.set(s2,0.7+grng()*0.6,1);
     e.set(0,ry,0);q.setFromEuler(e);m.compose(v,q,sc);instA.setMatrixAt(placed,m);
     e.set(0,ry+Math.PI/2,0);q.setFromEuler(e);m.compose(v,q,sc);instB.setMatrixAt(placed,m);
-    const b2=0.8+grng()*0.35;tint.setRGB(b2,b2,b2);
+    const b2=0.88+grng()*0.32;tint.setRGB(b2,b2,b2);
     instA.setColorAt(placed,tint);instB.setColorAt(placed,tint);
     placed++;
   }
@@ -392,7 +396,7 @@ function frame(now){
   const sp=f*95+vel;
   const nx=px+Math.sin(ang)*sp*dt, nz=pz-Math.cos(ang)*sp*dt;
   if(height(nx,nz)>0.8){px=nx;pz=nz;}
-  const eye=height(px,pz)+11+Math.sin(now*0.004)*(Math.abs(sp)>2?0.5:0.12);
+  const eye=height(px,pz)+11+(Math.abs(sp)>2?Math.sin(now*0.004)*0.5:0);  // bob only while walking
   camera.position.set(px,eye,pz);
   camera.lookAt(px+Math.sin(ang)*40, eye+6, pz-Math.cos(ang)*40);
   fallsTex.offset.y=-(now*0.0006)%1;
