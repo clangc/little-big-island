@@ -181,14 +181,15 @@ const save = (name, durl) => { fs.writeFileSync(path.join(OUT, name), Buffer.fro
   const CG5 = U + '72e6e22f-IMG_1244.png';
   const CGB = U + '9d1d43f8-IMG_1251.png';
   const CGK = U + 'f1c7e141-IMG_1252.png';
+  const CGP = U + '8bda61d6-IMG_1255.png';
   await keyCast(CG5, [
-    { name: 'patch',  x0: 0.360, x1: 0.512 },
     { name: 'grit',   x0: 0.455, x1: 0.690 },
     { name: 'shaky',  x0: 0.663, x1: 0.828, keepAll: true },
     { name: 'thread', x0: 0.828, x1: 1.0 },
   ], 85, 0.24);
   await keyCast(CGB, [ { name: 'bright', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   await keyCast(CGK, [ { name: 'kazoo', x0: 0.0, x1: 1.0 } ], 85, 0.24);
+  await keyCast(CGP, [ { name: 'patch', x0: 0.0, x1: 1.0 } ], 85, 0.24);
   // (retired) painterly-lineup cast cut — superseded by the FINAL CG cast above
 
   await b.close();
