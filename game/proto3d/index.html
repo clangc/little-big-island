@@ -414,10 +414,22 @@ billboard('../assets/rock.png',24,-28,140,1.1);
    Bright 1 (shore), Kazoo 2 (cliff), Patch 3 (cracked garden), Grit 5 (mountain),
    Shaky 7 (rising cliff), Thread 9 (library). Human scale: player eye = 11u. */
 const COMPANIONS=[];
+function nameTag(text,x,y,z){
+  const c=document.createElement('canvas');c.width=256;c.height=72;const g=c.getContext('2d');
+  const w=200,h=52,x0=(256-w)/2,y0=8,r=14;
+  g.beginPath();g.moveTo(x0+r,y0);g.arcTo(x0+w,y0,x0+w,y0+h,r);g.arcTo(x0+w,y0+h,x0,y0+h,r);
+  g.arcTo(x0,y0+h,x0,y0,r);g.arcTo(x0,y0,x0+w,y0,r);g.closePath();
+  g.fillStyle='rgba(58,33,16,0.82)';g.fill();g.lineWidth=4;g.strokeStyle='#caa04e';g.stroke();
+  g.font='bold 32px Georgia';g.textAlign='center';g.fillStyle='#ffe9b0';g.fillText(text,128,y0+37);
+  const t=new THREE.CanvasTexture(c);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
+  s.scale.set(8.5,2.4,1);s.position.set(x,y,z);scene.add(s);return s;
+}
 function companion(key,hgt,x,z,ch,extras){
   const sp=billboard(`../assets/${key}.png`,hgt,x,z,0.5);
   sp.userData.npc=key;
-  COMPANIONS.push({sp,ch,key,baseY:sp.position.y,extras:extras||[]});return sp;
+  const tag=nameTag(key[0].toUpperCase()+key.slice(1),x,height(x,z)+hgt+2.6,z);
+  COMPANIONS.push({sp,ch,key,baseY:sp.position.y,extras:[tag,...(extras||[])]});return sp;
 }
 companion('bright',16, 24,168, 1);
 {const gc=document.createElement('canvas');gc.width=gc.height=64;      // Bright's spark
@@ -510,11 +522,11 @@ function frame(now){
   for(let i=0;i<COMPANIONS.length;i++){const c=COMPANIONS[i];if(!c.sp.visible)continue;
     const hop=c.hopT&&(now-c.hopT<380)?Math.sin((now-c.hopT)/380*Math.PI)*1.7:0;
     c.sp.position.y=c.baseY+Math.sin(now*0.0016+i*2.1)*0.26+hop;}
-  {const b=COMPANIONS[0];if(b&&b.sp.visible&&b.extras.length>=2){
+  {const b=COMPANIONS[0];if(b&&b.sp.visible&&b.extras.length>=3){   // extras: [nameTag, sparkGlow, sparkLight]
     const t2=now*0.0009;
     const gx=b.sp.position.x+Math.sin(t2)*4.5, gz=b.sp.position.z+Math.cos(t2)*4.5,
           gy=b.baseY+10+Math.sin(now*0.0021)*1.3;
-    b.extras[0].position.set(gx,gy,gz);b.extras[1].position.set(gx,gy,gz);}}
+    b.extras[1].position.set(gx,gy,gz);b.extras[2].position.set(gx,gy,gz);}}
   if(typeof P!=="undefined"&&P&&!SHOWCASE){
     if(Math.abs(sp)>2&&now-stepT>390){stepT=now;SFX.step();}
     for(const c of COMPANIONS){                      // walk up to someone → they greet you
