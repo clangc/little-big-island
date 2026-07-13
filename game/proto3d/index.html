@@ -77,6 +77,11 @@ function setGrowth(t){
   // cave & waterfall wake up as the island does
   caveLight.intensity=2+t*26; caveGlow.material.opacity=0.25+t*0.75;
   falls.visible=t>0.15; falls.material.opacity=Math.min(1,(t-0.15)*2);
+  // companions arrive by chapter (Bright 1 … Thread 9)
+  const chapter=1+t*9;
+  for(const c of COMPANIONS){const on=chapter>=c.ch-1e-6;
+    c.sp.visible=on; if(c.sp.userData.shadow)c.sp.userData.shadow.visible=on;
+    for(const o of c.extras)o.visible=on;}
 }
 
 /* ---------- terrain ---------- */
@@ -139,14 +144,15 @@ pool.rotation.x=-Math.PI/2;pool.position.set(fx,Math.max(0.4,height(fx,fz+26)+0.
 const loader=new THREE.TextureLoader();
 const shadowMat=new THREE.MeshBasicMaterial({color:0x1e3018,transparent:true,opacity:0.28,depthWrite:false});
 function blobShadow(x,z,r){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),shadowMat);
-  m.rotation.x=-Math.PI/2;m.position.set(x,height(x,z)+0.35,z);scene.add(m);}
+  m.rotation.x=-Math.PI/2;m.position.set(x,height(x,z)+0.35,z);scene.add(m);return m;}
 function billboard(url,hgt,x,z,aspect){
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({alphaTest:0.2}));
   const tex=loader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;
     sp.material.map=t;sp.material.needsUpdate=true;
     sp.scale.set(hgt*t.image.width/t.image.height,hgt,1);});
   sp.scale.set(hgt*(aspect||1),hgt,1);
-  sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);blobShadow(x,z,hgt*0.30);return sp;
+  sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);
+  sp.userData.shadow=blobShadow(x,z,hgt*0.30);return sp;
 }
 const treeTex=loader.load('../assets/tree.png',t=>{t.colorSpace=THREE.SRGBColorSpace;});
 const treeMat=new THREE.SpriteMaterial({map:treeTex,alphaTest:0.14});
@@ -159,17 +165,32 @@ for(let i=0;i<46;i++){
   s.scale.set(sc,sc,1);s.position.set(x,y+sc*0.42,z);scene.add(s);blobShadow(x,z,sc*0.30);
 }
 billboard('../assets/house.png',48,-85,55,1.0);
-const brightSp=billboard('../assets/bright.png',50,40,60,0.5);
-{const gc=document.createElement('canvas');gc.width=gc.height=64;
+billboard('../assets/pine.png',46,120,-40,0.7);
+billboard('../assets/rock.png',24,-28,140,1.1);
+
+/* ---------- the companions, at their story spots, arriving by chapter ----------
+   Bright 1 (shore), Kazoo 2 (cliff), Patch 3 (cracked garden), Grit 5 (mountain),
+   Shaky 7 (rising cliff), Thread 9 (library). Human scale: player eye = 11u. */
+const COMPANIONS=[];
+function companion(key,hgt,x,z,ch,extras){
+  const sp=billboard(`../assets/${key}.png`,hgt,x,z,0.5);
+  COMPANIONS.push({sp,ch,extras:extras||[]});return sp;
+}
+companion('bright',16, 24,168, 1);
+{const gc=document.createElement('canvas');gc.width=gc.height=64;      // Bright's spark
  const gg=gc.getContext('2d');const grd=gg.createRadialGradient(32,32,2,32,32,30);
  grd.addColorStop(0,'rgba(255,240,200,1)');grd.addColorStop(0.35,'rgba(255,205,110,0.75)');grd.addColorStop(1,'rgba(255,190,90,0)');
  gg.fillStyle=grd;gg.fillRect(0,0,64,64);
  const gt=new THREE.CanvasTexture(gc);
  const g=new THREE.Sprite(new THREE.SpriteMaterial({map:gt,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
- g.scale.set(6,6,1);g.position.set(33,height(40,60)+28,56);scene.add(g);
- const gl=new THREE.PointLight(0xffc95e,6,60,1.8);gl.position.copy(g.position);scene.add(gl);}
-billboard('../assets/pine.png',46,120,-40,0.7);
-billboard('../assets/rock.png',24,-28,140,1.1);
+ g.scale.set(4.5,4.5,1);g.position.set(19,height(24,168)+13,165);scene.add(g);
+ const gl=new THREE.PointLight(0xffc95e,6,45,1.8);gl.position.copy(g.position);scene.add(gl);
+ COMPANIONS[0].extras.push(g,gl);}
+companion('kazoo', 16, 150,  40, 2);
+companion('patch', 14,-140,  90, 3);
+companion('grit',  17, -20,-240, 5);
+companion('shaky', 17, 170,-180, 7);
+companion('thread',16, 100,-250, 9);
 
 /* ---------- living grass: instanced wind-swayed blades ---------- */
 const uTime={value:0};
