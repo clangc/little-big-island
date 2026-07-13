@@ -49,11 +49,18 @@ const lerpC=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),t);
 const uTime={value:0};
 
 /* ---------- sky dome ---------- */
-const skyU={top:{value:new THREE.Color()},mid:{value:new THREE.Color()},bot:{value:new THREE.Color()}};
+const skyU={top:{value:new THREE.Color()},mid:{value:new THREE.Color()},bot:{value:new THREE.Color()},
+  sunDir:{value:new THREE.Vector3(0,1,0)},glow:{value:new THREE.Color()},glowAmt:{value:0.5}};
 const sky=new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,uniforms:skyU,
   vertexShader:`varying vec3 vp;void main(){vp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`varying vec3 vp;uniform vec3 top,mid,bot;void main(){float h=normalize(vp).y;
-    vec3 c=h>0.0?mix(mid,top,smoothstep(0.0,0.55,h)):mix(mid,bot,smoothstep(0.0,-0.15,h));gl_FragColor=vec4(c,1.0);}`}));
+  fragmentShader:`varying vec3 vp;uniform vec3 top,mid,bot,glow;uniform vec3 sunDir;uniform float glowAmt;
+    void main(){vec3 d=normalize(vp);float h=d.y;
+    vec3 c=h>0.0?mix(mid,top,smoothstep(0.0,0.5,h)):mix(mid,bot,smoothstep(0.0,-0.12,h));
+    float s=max(dot(d,normalize(sunDir)),0.0);
+    c+=glow*glowAmt*(pow(s,5.0)*0.45+pow(s,28.0)*0.65);        // warm halo lives around the sun
+    c=mix(c,bot,exp(-abs(h)*14.0)*0.85);                       // cream haze band melts sea into sky
+    c+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-0.5)/128.0;  // dither kills banding
+    gl_FragColor=vec4(c,1.0);}`}));
 scene.add(sky);
 
 /* ---------- lights ---------- */
@@ -88,13 +95,18 @@ const clouds=[];
 /* ---------- THE LIGHT GROWS WITH THE CHILD ---------- */
 function setGrowth(t){
   // sky: pale silvery morning → deep blue/gold dusk
-  skyU.top.value=lerpC('#9fb9c8','#2f6a97',t);
-  skyU.mid.value=lerpC('#cfd9d8','#c98f6a',t);
-  skyU.bot.value=lerpC('#e8ece6','#f4dcaa',t);
+  skyU.top.value=lerpC('#9fb9c8','#33608f',t);
+  skyU.mid.value=lerpC('#cfd9d8','#d8a279',t);
+  skyU.bot.value=lerpC('#e8ece6','#f6dfb2',t);
+  skyU.glow.value=lerpC('#fff4dd','#ffb45e',t);
+  skyU.glowAmt.value=0.30+t*0.55;
   // sun: cool weak & high → warm golden strong, sinking toward the horizon
   sun.color=lerpC('#e8eef0','#ffdf9e',t); sun.intensity=1.05+t*1.75;
-  sun.position.set(-230,430-t*250,-580);
+  sun.position.set(-230+130*t,430-t*250,-580+1180*t);  // morning over the ridge → dusk setting over the southern sea
+  skyU.sunDir.value.copy(sun.position).normalize();
   sunDisc.position.copy(sun.position).normalize().multiplyScalar(3800);
+  const az=Math.atan2(sun.position.x,sun.position.z);   // the golden path follows the sun
+  glint.rotation.z=-az;glint.position.set(Math.sin(az)*820,0.45,Math.cos(az)*820);
   hemi.color=lerpC('#dfe8ee','#bfe0ff',t); hemi.groundColor=lerpC('#8a9088','#5a4a2e',t); hemi.intensity=1.0-t*0.1;
   amb.color=lerpC('#f2f5f2','#fff2d8',t); amb.intensity=0.5-t*0.15;
   // fog: close pale mist → far warm haze (the island "clears up when it gets to see you")
@@ -102,8 +114,9 @@ function setGrowth(t){
   scene.fog=new THREE.Fog(fc, 130+t*260, 820+t*1400);
   renderer.setClearColor(fc);
   // sea, sun and clouds ripen with the light
-  oceanMat.color=lerpC('#7f98a4','#2f83a0',t);
+  oceanMat.color=lerpC('#8aa2ab','#3a93b0',t);
   shallowMat.color=lerpC('#b9c6c6','#ffffff',t);
+  glint.material.opacity=0.1+t*0.45;
   sunDisc.material.color=lerpC('#f2f4f0','#ffcf7a',t);
   const sd=260+t*260;sunDisc.scale.set(sd,sd,1);
   for(const c of clouds)c.material.color=lerpC('#eef2f4','#ffd9b5',t);
@@ -141,25 +154,48 @@ geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
 geo.computeVertexNormals();
 const gtex=new THREE.Texture();gtex.colorSpace=THREE.SRGBColorSpace;
 gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping;gtex.repeat.set(46,46);
+gtex.anisotropy=renderer.capabilities.getMaxAnisotropy();
 {const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
   const g=c.getContext('2d');g.filter='brightness(2.05) saturate(1.15)';g.drawImage(im,0,0);
   gtex.image=c;gtex.needsUpdate=true;};im.src='../assets/grass_ground.png';}
 scene.add(new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,map:gtex})));
 
 /* ---------- ocean: living water, tropical shallows, lapping foam ---------- */
-const oceanMat=new THREE.MeshToonMaterial({color:0x2f83a0,gradientMap:GRAD,transparent:true,opacity:0.92});
+const waterTex=(()=>{const c=document.createElement('canvas');c.width=c.height=256;
+ const g=c.getContext('2d'),wr=mulberry32(SEED+21);
+ g.fillStyle='#e2e6e6';g.fillRect(0,0,256,256);
+ for(let i=0;i<110;i++){const x=wr()*256,y=wr()*256,w=18+wr()*54,h2=1.6+wr()*3;
+   g.fillStyle=i%3?`rgba(255,255,255,${0.22+wr()*0.3})`:`rgba(120,155,170,${0.2+wr()*0.24})`;
+   g.beginPath();g.ellipse(x,y,w,h2,0,0,Math.PI*2);g.fill();}
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+ t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(64,64);
+ t.anisotropy=renderer.capabilities.getMaxAnisotropy();return t;})();
+const oceanMat=new THREE.MeshToonMaterial({color:0x2f83a0,map:waterTex,gradientMap:GRAD,transparent:true,opacity:0.92});
 oceanMat.onBeforeCompile=sh=>{sh.uniforms.uTime=uTime;
   sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',
     '#include <begin_vertex>\ntransformed.z+=sin(position.x*0.012+uTime*0.9)*0.35+cos(position.y*0.017+uTime*1.3)*0.3;');};
-const ocean=new THREE.Mesh(new THREE.PlaneGeometry(12000,12000,96,96),oceanMat);
+const ocean=new THREE.Mesh(new THREE.PlaneGeometry(20000,20000,96,96),oceanMat);
 ocean.rotation.x=-Math.PI/2;ocean.position.y=-0.25;scene.add(ocean);
+/* the sun's golden path on the water */
+const glint=(()=>{const c=document.createElement('canvas');c.width=128;c.height=512;
+ const g=c.getContext('2d');g.save();g.translate(64,256);g.scale(0.27,1);
+ const gr=g.createRadialGradient(0,0,8,0,0,250);
+ gr.addColorStop(0,'rgba(255,236,180,0.9)');gr.addColorStop(0.5,'rgba(255,214,130,0.42)');gr.addColorStop(1,'rgba(255,200,110,0)');
+ g.fillStyle=gr;g.beginPath();g.arc(0,0,250,0,Math.PI*2);g.fill();g.restore();
+ const tex=new THREE.CanvasTexture(c);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(170,1400),
+   new THREE.MeshBasicMaterial({map:tex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+ m.rotation.x=-Math.PI/2;
+ scene.add(m);return m;})();
 /* shallows: turquoise where the seabed is close, melting into the deep */
-const shallowMat=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,transparent:true,opacity:0.8,depthWrite:false});
-{const sg=new THREE.PlaneGeometry(1500,1500,100,100);sg.rotateX(-Math.PI/2);
+const shallowTex=waterTex.clone();shallowTex.repeat.set(8,8);
+shallowTex.anisotropy=renderer.capabilities.getMaxAnisotropy();shallowTex.needsUpdate=true;
+const shallowMat=new THREE.MeshToonMaterial({vertexColors:true,map:shallowTex,gradientMap:GRAD,transparent:true,opacity:0.8,depthWrite:false});
+{const sg=new THREE.PlaneGeometry(2400,2400,110,110);sg.rotateX(-Math.PI/2);
  const sp=sg.attributes.position,scol=[];
- const cShallow=new THREE.Color('#a5ead9'),cDeep=new THREE.Color('#2f83a0');
+ const cShallow=new THREE.Color('#a5ead9'),cDeep=new THREE.Color('#357f9b');
  for(let i=0;i<sp.count;i++){const x=sp.getX(i),z=sp.getZ(i);
-   const t2=smooth(-16,-0.4,height(x,z));
+   const t2=smooth(-20,-0.4,height(x,z));
    const cc=new THREE.Color().copy(cDeep).lerp(cShallow,t2);scol.push(cc.r,cc.g,cc.b);}
  sg.setAttribute('color',new THREE.Float32BufferAttribute(scol,3));
  const sm=new THREE.Mesh(sg,shallowMat);sm.position.y=0.1;scene.add(sm);}
@@ -242,13 +278,14 @@ function billboard(url,hgt,x,z,aspect){
 const mkTreeMat=u=>new THREE.SpriteMaterial({map:loader.load(u,t=>{t.colorSpace=THREE.SRGBColorSpace;}),alphaTest:0.14});
 const treeMat=mkTreeMat('../assets/tree.png'),pineMat=mkTreeMat('../assets/pine.png'),autumnMat=mkTreeMat('../assets/tree_autumn.png');
 const trng=mulberry32(SEED+7);
-for(let i=0;i<46;i++){
+for(let i=0;i<40;i++){
   let x,z,y,k=0;
-  do{x=(trng()*2-1)*TERR*0.7;z=(trng()*2-1)*TERR*0.7;y=height(x,z);k++;}while((y<2||y>30)&&k<50);
+  do{x=(trng()*2-1)*TERR*0.7;z=(trng()*2-1)*TERR*0.7;y=height(x,z);k++;}
+  while((y<2||y>30||Math.hypot(x-15,z-235)<80)&&k<50);
   if(y<2||y>30)continue;
   const kind=trng();let mat=treeMat,asp=1;              // pines climb, one autumn tree remembers
   if(y>16&&kind<0.5){mat=pineMat;asp=0.7;}else if(kind<0.12){mat=autumnMat;}
-  const s=new THREE.Sprite(mat);const sc=24+trng()*18;
+  const s=new THREE.Sprite(mat);const sc=46+trng()*26;  // a tree is 3–4.5× a person, not a bush
   s.scale.set(sc*asp,sc,1);s.position.set(x,y+sc*0.42,z);scene.add(s);blobShadow(x,z,sc*0.30);
 }
 billboard('../assets/house.png',48,-85,55,1.0);
@@ -345,6 +382,8 @@ function frame(now){
     f.position.y=f.userData.y0+Math.sin(now*0.0012+i*1.7)*1.4;
     f.position.x=f.userData.x0+Math.sin(now*0.0007+i*2.3)*2.2;}
   for(const c of clouds){c.position.x+=dt*3.5;if(c.position.x>2600)c.position.x=-2600;}
+  waterTex.offset.x=(now*3e-5)%1;waterTex.offset.y=(now*1.7e-5)%1;
+  shallowTex.offset.x=(now*4e-5)%1;shallowTex.offset.y=(now*2.3e-5)%1;
   sky.position.copy(camera.position);
   renderer.render(scene,camera);
   window.__ready=true;
