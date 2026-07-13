@@ -118,7 +118,6 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
 <div id="bubble"></div>
 <script type="module">
 import * as THREE from './vendor/three.module.js';
-import {GLTFLoader} from './vendor/GLTFLoader.js';
 
 /* growth: 0 = Chapter 1 (pale, misty, tender) … 1 = Chapter 10 (earned golden dusk).
    The island's light literally grows with the child. Driven in-game by chapterOf(doneCount). */
@@ -158,6 +157,8 @@ function toonGrad(){const d=new Uint8Array([118,155,192,224,245]);const t=new TH
 const GRAD=toonGrad();
 const lerpC=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),t);
 const uTime={value:0};
+const COLLIDERS=[];                                  // {x,z,r} — solid things the player can't walk through
+function solid(x,z,r){COLLIDERS.push({x,z,r});}
 
 /* ---------- sky dome ---------- */
 const skyU={top:{value:new THREE.Color()},mid:{value:new THREE.Color()},bot:{value:new THREE.Color()},
@@ -324,11 +325,12 @@ const foam=(()=>{const SEGA=420,vs=[],idx=[];
 
 /* ---------- the cave: a real recess in the north highland, warm light inside ---------- */
 const caveX=-60, caveZ=-330, caveY=height(caveX,caveZ);
-const rockMat=new THREE.MeshToonMaterial({color:0x5f5244,gradientMap:GRAD});
-/* a low rocky outcrop hugging the slope, with a small dark mouth and hearth light inside */
+/* a low rocky outcrop in the warm painted palette, with a dark mouth and hearth light */
+const rockMat=new THREE.MeshToonMaterial({color:0x8a7154,gradientMap:GRAD});
 for(const[sx,sy,sz,r,ex,ey] of [[-13,2,9,10,1.4,0.7],[13,2,9,10,1.4,0.7],[0,9,5,11,1.5,0.75],[-6,0,13,6,1.2,0.65],[7,0,13,6,1.2,0.65]]){
   const b=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),rockMat);
   b.position.set(caveX+sx,caveY+sy,caveZ+sz);b.scale.set(ex,ey,1);scene.add(b);}
+solid(caveX,caveZ+10,26);
 const caveDark=new THREE.Mesh(new THREE.CircleGeometry(6.5,24),new THREE.MeshBasicMaterial({color:0x140d06}));
 caveDark.position.set(caveX,caveY+4.5,caveZ+14);scene.add(caveDark);
 const caveGlow=new THREE.Mesh(new THREE.CircleGeometry(4.6,24),
@@ -384,14 +386,14 @@ function billboard(url,hgt,x,z,aspect){
     sp.scale.set(hgt*t.image.width/t.image.height,hgt,1);});
   sp.scale.set(hgt*(aspect||1),hgt,1);
   sp.position.set(x,height(x,z)+hgt*0.46,z);scene.add(sp);
-  sp.userData.shadow=blobShadow(x,z,hgt*0.30);return sp;
+  sp.userData.shadow=blobShadow(x,z,hgt*0.30);
+  solid(x,z,Math.max(2.2,hgt*0.13));return sp;
 }
 function groundY(x,z){let m=height(x,z);            // lowest point under the footprint — nothing floats
   for(const[dx,dz] of [[4,0],[-4,0],[0,4],[0,-4]])m=Math.min(m,height(x+dx,z+dz));return m;}
 const mkTreeMat=u=>new THREE.SpriteMaterial({map:loader.load(u,t=>{t.colorSpace=THREE.SRGBColorSpace;}),alphaTest:0.3});
 const treeMat=mkTreeMat('assets/tree.png'),pineMat=mkTreeMat('assets/pine.png'),autumnMat=mkTreeMat('assets/tree_autumn.png');
 const trng=mulberry32(SEED+7);
-const roundTrees=[];                                    // flat cutouts near the player get 3D-lifted below
 for(let i=0;i<40;i++){
   let x,z,y,k=0;
   do{x=(trng()*2-1)*TERR*0.7;z=(trng()*2-1)*TERR*0.7;y=height(x,z);k++;}
@@ -403,28 +405,8 @@ for(let i=0;i<40;i++){
   else if(kind<0.12){mat=autumnMat;}
   const s=new THREE.Sprite(mat);const gy=groundY(x,z);
   s.scale.set(sc*asp,sc,1);s.position.set(x,gy+sc*0.40,z);scene.add(s);blobShadow(x,z,sc*0.30);
-  if(mat===treeMat&&Math.hypot(x-15,z-235)<420)roundTrees.push({s,x,z,sc});
+  solid(x,z,Math.max(2.6,sc*0.09));
 }
-/* ---------- the real tree: painted art lifted to a 3D mesh (Higgsfield image_to_3d) ---------- */
-new GLTFLoader().load('assets/models/tree.glb',g=>{
-  const root=g.scene;
-  root.traverse(o=>{if(o.isMesh){const old=o.material;
-    o.material=new THREE.MeshToonMaterial({map:old.map||null,color:0xd6ddbf,gradientMap:GRAD});  // settle the lime toward the painted palette
-    if(o.material.map)o.material.map.colorSpace=THREE.SRGBColorSpace;}});
-  const bb=new THREE.Box3().setFromObject(root);
-  const size=bb.getSize(new THREE.Vector3()), ctr=bb.getCenter(new THREE.Vector3());
-  root.position.set(-ctr.x,-bb.min.y,-ctr.z);          // stand centered on its own feet
-  const proto=new THREE.Group();proto.add(root);
-  const rrng=mulberry32(SEED+3);
-  for(const t of roundTrees.slice(0,14)){               // nearest cutouts become real trees
-    t.s.removeFromParent();
-    const inst=proto.clone();
-    inst.scale.setScalar(t.sc/size.y);
-    inst.rotation.y=rrng()*Math.PI*2;
-    inst.position.set(t.x,groundY(t.x,t.z)-0.5,t.z);
-    scene.add(inst);
-  }
-});
 billboard('assets/house.png',48,-85,55,1.0);
 billboard('assets/pine.png',46,120,-40,0.7);
 billboard('assets/rock.png',24,-28,140,1.1);
@@ -436,7 +418,7 @@ const COMPANIONS=[];
 function companion(key,hgt,x,z,ch,extras){
   const sp=billboard(`assets/${key}.png`,hgt,x,z,0.5);
   sp.userData.npc=key;
-  COMPANIONS.push({sp,ch,key,extras:extras||[]});return sp;
+  COMPANIONS.push({sp,ch,key,baseY:sp.position.y,extras:extras||[]});return sp;
 }
 companion('bright',16, 24,168, 1);
 {const gc=document.createElement('canvas');gc.width=gc.height=64;      // Bright's spark
@@ -505,8 +487,12 @@ function frame(now){
   let f=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
   ang+=((keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0))*1.8*dt;
   const sp=f*95+vel;
-  const nx=px+Math.sin(ang)*sp*dt, nz=pz-Math.cos(ang)*sp*dt;
-  if(height(nx,nz)>0.8){px=nx;pz=nz;}
+  let nx=px+Math.sin(ang)*sp*dt, nz=pz-Math.cos(ang)*sp*dt;
+  for(const c of COLLIDERS){                        // slide around solid things
+    const dx=nx-c.x,dz=nz-c.z,rr=c.r+2.0,d2=dx*dx+dz*dz;
+    if(d2<rr*rr&&d2>1e-6){const d=Math.sqrt(d2);nx=c.x+dx/d*rr;nz=c.z+dz/d*rr;}}
+  const hNew=height(nx,nz);
+  if(hNew>0.8&&hNew-height(px,pz)<3.2){px=nx;pz=nz;} // no wading out to sea, no scaling cliff walls
   const eye=height(px,pz)+11+(Math.abs(sp)>2?Math.sin(now*0.004)*0.5:0);  // bob only while walking
   camera.position.set(px,eye,pz);
   camera.lookAt(px+Math.sin(ang)*40, eye+6, pz-Math.cos(ang)*40);
@@ -521,6 +507,25 @@ function frame(now){
     f.position.x=f.userData.x0+Math.sin(now*0.0007+i*2.3)*2.2;}
   for(const c of clouds){c.position.x+=dt*3.5;if(c.position.x>2600)c.position.x=-2600;}
   waterTex.offset.x=(now*3e-5)%1;waterTex.offset.y=(now*1.7e-5)%1;
+  /* the companions are alive: idle sway, greeting hop, Bright's orbiting spark */
+  for(let i=0;i<COMPANIONS.length;i++){const c=COMPANIONS[i];if(!c.sp.visible)continue;
+    const hop=c.hopT&&(now-c.hopT<380)?Math.sin((now-c.hopT)/380*Math.PI)*1.7:0;
+    c.sp.position.y=c.baseY+Math.sin(now*0.0016+i*2.1)*0.26+hop;}
+  {const b=COMPANIONS[0];if(b&&b.sp.visible&&b.extras.length>=2){
+    const t2=now*0.0009;
+    const gx=b.sp.position.x+Math.sin(t2)*4.5, gz=b.sp.position.z+Math.cos(t2)*4.5,
+          gy=b.baseY+10+Math.sin(now*0.0021)*1.3;
+    b.extras[0].position.set(gx,gy,gz);b.extras[1].position.set(gx,gy,gz);}}
+  if(typeof P!=="undefined"&&P&&!SHOWCASE){
+    if(Math.abs(sp)>2&&now-stepT>390){stepT=now;SFX.step();}
+    for(const c of COMPANIONS){                      // walk up to someone → they greet you
+      if(!c.sp.visible||greeted.has(c.key))continue;
+      const dx=c.sp.position.x-px,dz=c.sp.position.z-pz;
+      if(dx*dx+dz*dz<400){greeted.add(c.key);c.hopT=now;
+        const n=NPCS.find(x=>x.k===c.key);
+        if(n){bubble(n.name,n.arrive,6500);SFX.chime();
+          if(!P.metNpcs.includes(c.key)){P.metNpcs.push(c.key);save();}}}}
+  }
   shallowTex.offset.x=(now*4e-5)%1;shallowTex.offset.y=(now*2.3e-5)%1;
   sky.position.copy(camera.position);
   renderer.render(scene,camera);
@@ -584,6 +589,7 @@ const SFX=(()=>{
       if(muted){if(ambient){try{ambient.src.stop();}catch(e){}ambient=null;}if(master)master.gain.value=0;}
       else{if(master)master.gain.value=0.5;actx();if(ambientWanted)setAmbient(true);}
       return muted;},
+    step(){tone(88+Math.random()*22,0.09,"triangle",0.09,66);},
     coin(){tone(880,0.09,"square",0.14);tone(1320,0.12,"square",0.11,null,0.06);},
     quest(){seqq([523,659,784,1047],0.5,"sine",0.15);},
     big(){seqq([392,523,659,784,1047],0.7,"sine",0.17,0.09);},
@@ -592,6 +598,7 @@ const SFX=(()=>{
 })();
 let _audioBooted=false;
 addEventListener("pointerdown",()=>{if(!_audioBooted){_audioBooted=true;SFX.unlock();}},{passive:true});
+const greeted=new Set();let stepT=0;
 
 /* ---- the book's systems (identical data to /play — saves carry over) ---- */
 const TRE={

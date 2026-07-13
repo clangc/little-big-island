@@ -9,6 +9,7 @@ mkdir -p ../play3d
 cp proto3d/index.html ../play3d/index.html
 cp -r vendor ../play3d/vendor
 cp -r assets ../play3d/assets
+rm -rf ../play3d/assets/models   # 3D lifts stay out of the shipped bundle for now (painted look won)
 # the prototype references ../assets and ../vendor; at /play3d they live inside
 node -e '
 const fs=require("fs"),p="../play3d/index.html";
