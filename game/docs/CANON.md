@@ -71,3 +71,4 @@ spark=hope/believing before seeing · note=imagination · horn=joy · seed=givin
 ## Founder rulings on ages (2026-07-13)
 - Patch is a BOY of about 12 (as in the book), hair fully covering one eye.
   Not all companions are young adults — ages follow the founder's per-character calls.
+- Shaky is a SKINNY, lanky young man of ~20 (nervous, slight hunch) — not a child.
