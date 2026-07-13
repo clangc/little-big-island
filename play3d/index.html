@@ -94,7 +94,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
 #bubble .spk{font-weight:bold;color:#8a5714}
 </style>
 </head><body><canvas id="c"></canvas>
-<img id="hands" src="assets/hands.png"><script>if(new URLSearchParams(location.search).get('hands'))document.getElementById('hands').style.display='block';</script>
+<img id="hands" src="assets/web/hands.webp"><script>if(new URLSearchParams(location.search).get('hands'))document.getElementById('hands').style.display='block';</script>
 <div id="hud">
   <div id="plaque" class="panel"><div id="avatar"></div>
     <div><span id="hud_name"></span><span class="chbadge" id="hud_ch"></span></div>
@@ -116,6 +116,15 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
 <div id="veil"><div id="modal"></div></div>
 <div id="toast"></div>
 <div id="bubble"></div>
+<div id="loader" style="position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(#173a46,#0e2831);transition:opacity .6s">
+  <div style="text-align:center;color:#ffe9b0;font-family:Georgia,serif">
+    <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:50%;
+      border:4px solid rgba(255,233,176,.25);border-top-color:#ffd76a;animation:lspin 1s linear infinite"></div>
+    <div style="font-size:17px;letter-spacing:.5px">The island is waking up…</div>
+  </div>
+</div>
+<style>@keyframes lspin{to{transform:rotate(360deg)}}</style>
 <script type="module">
 import * as THREE from './vendor/three.module.js';
 
@@ -269,7 +278,7 @@ gtex.wrapS=gtex.wrapT=THREE.MirroredRepeatWrapping;gtex.repeat.set(46,46);
 gtex.anisotropy=renderer.capabilities.getMaxAnisotropy();
 {const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
   const g=c.getContext('2d');g.filter='brightness(2.05) saturate(1.15)';g.drawImage(im,0,0);
-  gtex.image=c;gtex.needsUpdate=true;};im.src='assets/grass_ground.png';}
+  gtex.image=c;gtex.needsUpdate=true;};im.src='assets/web/grass_ground.webp';}
 scene.add(new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,map:gtex})));
 
 /* ---------- ocean: living water, tropical shallows, lapping foam ---------- */
@@ -392,7 +401,7 @@ function billboard(url,hgt,x,z,aspect){
 function groundY(x,z){let m=height(x,z);            // lowest point under the footprint — nothing floats
   for(const[dx,dz] of [[4,0],[-4,0],[0,4],[0,-4]])m=Math.min(m,height(x+dx,z+dz));return m;}
 const mkTreeMat=u=>new THREE.SpriteMaterial({map:loader.load(u,t=>{t.colorSpace=THREE.SRGBColorSpace;}),alphaTest:0.3});
-const treeMat=mkTreeMat('assets/tree.png'),pineMat=mkTreeMat('assets/pine.png'),autumnMat=mkTreeMat('assets/tree_autumn.png');
+const treeMat=mkTreeMat('assets/web/tree.webp'),pineMat=mkTreeMat('assets/web/pine.webp'),autumnMat=mkTreeMat('assets/web/tree_autumn.webp');
 const trng=mulberry32(SEED+7);
 for(let i=0;i<40;i++){
   let x,z,y,k=0;
@@ -407,9 +416,9 @@ for(let i=0;i<40;i++){
   s.scale.set(sc*asp,sc,1);s.position.set(x,gy+sc*0.40,z);scene.add(s);blobShadow(x,z,sc*0.30);
   solid(x,z,Math.max(2.6,sc*0.09));
 }
-billboard('assets/house.png',48,-85,55,1.0);
-billboard('assets/pine.png',46,120,-40,0.7);
-billboard('assets/rock.png',24,-28,140,1.1);
+billboard('assets/web/house.webp',48,-85,55,1.0);
+billboard('assets/web/pine.webp',46,120,-40,0.7);
+billboard('assets/web/rock.webp',24,-28,140,1.1);
 
 /* ---------- the companions, at their story spots, arriving by chapter ----------
    Bright 1 (shore), Kazoo 2 (cliff), Patch 3 (cracked garden), Grit 5 (mountain),
@@ -427,7 +436,7 @@ function nameTag(text,x,y,z){
   s.scale.set(8.5,2.4,1);s.position.set(x,y,z);scene.add(s);return s;
 }
 function companion(key,hgt,x,z,ch,extras){
-  const sp=billboard(`assets/${key}.png`,hgt,x,z,0.5);
+  const sp=billboard(`assets/web/${key}.webp`,hgt,x,z,0.5);
   sp.userData.npc=key;
   const tag=nameTag(key[0].toUpperCase()+key.slice(1),x,height(x,z)+hgt+2.6,z);
   COMPANIONS.push({sp,ch,key,baseY:sp.position.y,extras:[tag,...(extras||[])]});return sp;
@@ -956,6 +965,10 @@ addEventListener('pointerup',e=>{
 
 /* ---- boot ---- */
 renderMiniBase();
+{const hide=()=>{const l=$("loader");if(!l||l.style.opacity==="0")return;
+   l.style.opacity="0";setTimeout(()=>l.style.display="none",700);};
+ THREE.DefaultLoadingManager.onLoad=hide;
+ setTimeout(hide,7000);}                       // never trap a child on the spinner
 if(!SHOWCASE)showStart();
 </script>
 <script type="application/json" id="questdata">[["spark","Go outside and find something tiny and beautiful. A ladybug counts double."],["spark","Find the prettiest thing in your house that nobody ever looks at. Look at it properly."],["spark","Watch the sky for two whole minutes. Come back and report the best cloud."],["spark","Find something that glows or shines and show it to somebody."],["spark","Say one good thing about today OUT LOUD before dinner."],["spark","Find a spot of sunlight on the floor and stand in it like it's a stage."],["spark","Tomorrow morning, notice the FIRST good thing that happens. Keep it all day."],["spark","Find three things outside that are your favorite color."],["spark","Ask someone older about the best day they ever had. Listen to the whole thing."],["spark","Draw the sunrise or the sunset — imagining it is allowed."],["spark","Find a stone that looks like it's keeping a secret. Keep it somewhere safe."],["spark","When something goes wrong today, find one tiny okay thing hiding inside it."],["spark","Right after it rains, go out and find something that looks brand new."],["spark","Count the stars for one minute tonight. No stars? Count the lights."],["spark","Tell someone about something you're looking forward to."],["horn","Make a grown-up laugh. For real. Fake laughs don't count."],["horn","Invent a brand-new silly dance and perform it for someone."],["horn","Tell your best joke to somebody. Don't have one? Make one up right now."],["horn","Sing a song wrong ON PURPOSE until someone smiles."],["horn","Have a funny-face contest. Lose dramatically or win gloriously."],["horn","Find the funniest word you know and use it three times today."],["horn","Do a boring task in the silliest way possible. (Still finish it, though.)"],["horn","Give your pet or a stuffed animal a ridiculous new name. Use it all day."],["horn","Laugh at yourself once today — kindly."],["horn","Teach somebody a game you invented. The rules may be ridiculous."],["horn","Talk in a funny accent for five whole minutes."],["horn","Draw the silliest animal that doesn't exist. Name it."],["horn","Find someone grumpy and get them to at least almost-smile."],["horn","Hop everywhere instead of walking for ten minutes."],["horn","Tell a story where every sentence must be sillier than the last one."],["note","Imagine an animal nobody has ever seen. Describe it to someone."],["note","Invent a machine that fixes your most annoying problem. Draw the plans."],["note","Look at a cloud and decide what it's REALLY building up there."],["note","The map has blank edges. Make up what's there — land nobody's imagined yet."],["note","Design your dream bedroom out loud. No budget. Gravity optional."],["note","Invent a new holiday. What do people eat? What do they yell?"],["note","Ask 'what if…?' about something ordinary and follow it for five minutes."],["note","Make up the life story of the oldest thing in your house."],["note","Invent the ice cream flavor that SHOULD exist but doesn't."],["note","Close your eyes and design an island for someone you love."],["note","If today were a movie — what's the title? Who plays you?"],["note","Build something out of whatever's in the room. Give it a name."],["note","Invent a secret word with a friend. Use it like it's normal."],["note","Decide what your future self is doing exactly ten years from today."],["note","Make up a song about something boring until it stops being boring."],["seed","Get someone a glass of water BEFORE they ask. Sneaky kindness is the best kindness."],["seed","Give something away today. Something real — not something broken."],["seed","Do a chore that isn't yours and don't tell anyone."],["seed","Make or draw something for someone. Actually give it to them."],["seed","Thank someone for a thing they always do that nobody notices."],["seed","Share your snack. The good part. Not the crumbs."],["seed","Help someone younger with something that's hard for them and easy for you."],["seed","Water a plant. Or a garden. Or one slightly sad-looking tree."],["seed","Ask someone 'how was your day?' and listen without interrupting once."],["seed","Leave a kind note where someone will find it."],["seed","Feed some birds, or leave water out for animals on a hot day."],["seed","Give somebody your spot — the good chair, the front seat, the first turn."],["seed","Hug someone who needs it. (Check first. Then really hug.)"],["seed","Tell someone in your family one exact thing you love about them."],["seed","Pick up three pieces of trash that aren't yours."],["wing","Try the thing you failed at last time. One more try. Today."],["wing","Show somebody something you made — even if it isn't finished."],["wing","Stand tall, arms up, and yell 'BEHOLD!' before doing something hard."],["wing","Practice something for ten minutes that you wish you were better at."],["wing","Answer a question out loud even if you're not 100% sure."],["wing","Teach someone something you're good at."],["wing","Do the hard part FIRST today, not last."],["wing","Write down three things you can do now that you couldn't do a year ago."],["wing","Balance on one foot longer than yesterday. No yesterday? Start the record."],["wing","Say 'I made this' without adding 'it's bad' after it."],["wing","Race someone. Actually try to win."],["wing","Fix something small that's been broken for ages."],["wing","Learn one word in another language and use it at dinner."],["wing","Beat your own record at anything you can measure."],["wing","When you make a mistake today, say 'interesting!' instead of 'I'm terrible.'"],["shield","Do the thing you've been avoiding. You know the one. Scared is allowed — scared is the point."],["shield","Say sorry for something FIRST, before anyone asks you to."],["shield","Try a food you already decided you hate. One real bite."],["shield","Ask a question in front of people, even if your voice shakes."],["shield","Tell someone the truth about something small you fibbed about."],["shield","Go somewhere slightly dark (with permission) and count to twenty like a legend."],["shield","Introduce yourself to someone you don't know well. First name minimum."],["shield","Stand up for someone today, even in a small way."],["shield","Let someone else go first when you REALLY wanted to be first."],["shield","Try the big slide, the high branch, the deep end — the safe-but-scary one. Grown-up nearby."],["shield","Say 'I don't know' out loud once today. It's braver than pretending."],["shield","Ask for help with something you've been struggling with alone."],["shield","Watch the scary-ish part without covering your eyes. Blinking allowed."],["shield","Do your least favorite chore without being asked twice."],["shield","Tell someone one thing you're afraid of. Fears shrink when you say them."],["thread","Keep a promise today. Even a tiny one. ESPECIALLY a tiny one."],["thread","Finish something you started and abandoned."],["thread","Call or write to someone you haven't talked to in a while."],["thread","Make your bed like you mean it. Tomorrow: again."],["thread","Remember something someone told you last week — and ask them about it."],["thread","Put something back exactly where it belongs. Then two more things."],["thread","Make a plan with someone and ACTUALLY do the plan."],["thread","Say 'I'll be there in one minute' — and be there in one minute."],["thread","Do the same kind thing for the same person two days in a row."],["thread","Tie together things that belong together. Socks count. Families count double."],["thread","Thank the person who always shows up for you."],["thread","Take care of something living today. And again tomorrow."],["thread","When you say 'just five more minutes' — keep it to five. Time yourself."],["thread","Ask the oldest person you know for a story from before you existed."],["thread","Show someone how to do the thing they keep forgetting. Light the way."]]</script>
