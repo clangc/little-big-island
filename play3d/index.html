@@ -52,6 +52,14 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
   font-family:inherit;font-size:10.5px;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
 #nav button .ic{font-size:22px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
 #nav button:active{transform:translateY(1px)}
+#bdrawer{position:absolute;left:8px;right:8px;bottom:78px;display:none;gap:8px;pointer-events:auto;
+  padding:8px;overflow-x:auto;white-space:nowrap}
+#bdrawer .chip{display:inline-flex;flex-direction:column;align-items:center;gap:3px;width:76px;padding:7px 4px;
+  border:2px solid #caa04e;border-radius:12px;background:linear-gradient(#f7e9c4,#eed9a8);color:#4a2c0e;
+  font-size:11px;font-weight:bold;cursor:pointer;vertical-align:top}
+#bdrawer .chip img{width:38px;height:38px;object-fit:contain}
+#bdrawer .chip.on{outline:3px solid #ffd76a;background:linear-gradient(#fff3cf,#f4df9d)}
+#bdrawer .chip.cant{opacity:.45}
 @media (max-width:520px){
   #questpanel{width:168px;top:170px}
   #nav{left:8px;right:8px;justify-content:space-between}
@@ -104,6 +112,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
   <div id="clockbox" class="panel"><div id="hud_time"></div><div id="hud_day"></div></div>
   <div id="mini"><canvas id="minicv" width="208" height="208"></canvas></div>
   <div id="questpanel" class="panel"><div class="qp-head" id="qp_head"><span>Active Quests</span><span id="qp_tog">–</span></div><div id="qp_list"></div></div>
+  <div id="bdrawer" class="panel"></div>
   <div id="nav">
     <button data-nav="quest"><span class="ic">📜</span>Quest</button>
     <button data-nav="deeds"><span class="ic">🏅</span>Deeds</button>
@@ -130,11 +139,12 @@ import * as THREE from './vendor/three.module.js';
 
 /* growth: 0 = Chapter 1 (pale, misty, tender) … 1 = Chapter 10 (earned golden dusk).
    The island's light literally grows with the child. Driven in-game by chapterOf(doneCount). */
-const GROWTH = Math.max(0, Math.min(1, parseFloat(new URLSearchParams(location.search).get('growth') ?? '1')));
+const Q=new URLSearchParams(location.search);
+const GROWTH = Math.max(0, Math.min(1, parseFloat(Q.get('growth') ?? '1')));
 
-/* ---------- seeded terrain (unique island per child) ---------- */
+/* ---------- seeded terrain (unique island per child — ?seed= comes from the profile) ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
-const SEED=12345, rng=mulberry32(SEED), OFF=rng()*1000, OFF2=rng()*1000;
+const SEED=(parseInt(Q.get('seed')||'',10)>>>0)||12345, rng=mulberry32(SEED), OFF=rng()*1000, OFF2=rng()*1000;
 function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
   const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
   const h=(a,b)=>{let n=(Math.imul(a,374761393)+Math.imul(b,668265263))|0;n=Math.imul(n^(n>>>13),1274126177)|0;return((n>>>0)&1023)/1023;};
@@ -279,7 +289,8 @@ gtex.anisotropy=renderer.capabilities.getMaxAnisotropy();
 {const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
   const g=c.getContext('2d');g.filter='brightness(2.05) saturate(1.15)';g.drawImage(im,0,0);
   gtex.image=c;gtex.needsUpdate=true;};im.src='assets/web/grass_ground.webp';}
-scene.add(new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,map:gtex})));
+const terrain=new THREE.Mesh(geo,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:GRAD,map:gtex}));
+scene.add(terrain);
 
 /* ---------- ocean: living water, tropical shallows, lapping foam ---------- */
 const waterTex=(()=>{const c=document.createElement('canvas');c.width=c.height=256;
@@ -493,30 +504,40 @@ companion('thread',16, 100,-250, 9);
     if(inst.instanceColor)inst.instanceColor.needsUpdate=true;scene.add(inst);}
 }
 /* ---------- first-person walking (keys + touch drag), portrait-first framing ---------- */
-const Q=new URLSearchParams(location.search);
 let px=parseFloat(Q.get('x')??'15'),pz=parseFloat(Q.get('z')??'235'),vel=0,
     ang=parseFloat(Q.get('ang')??'-0.12');
 const keys={};addEventListener('keydown',e=>keys[e.key.toLowerCase()]=1);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
 let touch=null;
-addEventListener('pointerdown',e=>touch={x:e.clientX,y:e.clientY});
-addEventListener('pointermove',e=>{if(touch){ang+=(e.clientX-touch.x)*0.004;vel=(touch.y-e.clientY)*0.6;touch={x:e.clientX,y:touch.y};}});
+addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('#hud,#veil,#toast,#bubble,#loader'))return;touch={x:e.clientX,y:e.clientY};});
+addEventListener('pointermove',e=>{if(!touch)return;
+  if(window.__building){
+    px=Math.max(-430,Math.min(430,px-(e.clientX-touch.x)*0.45));
+    pz=Math.max(-430,Math.min(430,pz-(e.clientY-touch.y)*0.45));
+    touch={x:e.clientX,y:e.clientY};
+  }else{ang+=(e.clientX-touch.x)*0.004;vel=(touch.y-e.clientY)*0.6;touch={x:e.clientX,y:touch.y};}});
 addEventListener('pointerup',()=>{touch=null;vel=0;});
 setGrowth(GROWTH);
 let t0=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-t0)/1000);t0=now;uTime.value=now*0.001;
-  let f=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
-  ang+=((keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0))*1.8*dt;
-  const sp=f*95+vel;
-  let nx=px+Math.sin(ang)*sp*dt, nz=pz-Math.cos(ang)*sp*dt;
-  for(const c of COLLIDERS){                        // slide around solid things
-    const dx=nx-c.x,dz=nz-c.z,rr=c.r+2.0,d2=dx*dx+dz*dz;
-    if(d2<rr*rr&&d2>1e-6){const d=Math.sqrt(d2);nx=c.x+dx/d*rr;nz=c.z+dz/d*rr;}}
-  const hNew=height(nx,nz);
-  if(hNew>0.8&&hNew-height(px,pz)<3.2){px=nx;pz=nz;} // no wading out to sea, no scaling cliff walls
-  const eye=height(px,pz)+11+(Math.abs(sp)>2?Math.sin(now*0.004)*0.5:0);  // bob only while walking
-  camera.position.set(px,eye,pz);
-  camera.lookAt(px+Math.sin(ang)*40, eye+6, pz-Math.cos(ang)*40);
+  let sp=0;
+  if(window.__building){                             // bird's-eye build view: drag pans, taps place
+    camera.position.set(px,235,pz+150);
+    camera.lookAt(px,0,pz-30);
+  }else{
+    let f=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
+    ang+=((keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0))*1.8*dt;
+    sp=f*95+vel;
+    let nx=px+Math.sin(ang)*sp*dt, nz=pz-Math.cos(ang)*sp*dt;
+    for(const c of COLLIDERS){                       // slide around solid things
+      const dx=nx-c.x,dz=nz-c.z,rr=c.r+2.0,d2=dx*dx+dz*dz;
+      if(d2<rr*rr&&d2>1e-6){const d=Math.sqrt(d2);nx=c.x+dx/d*rr;nz=c.z+dz/d*rr;}}
+    const hNew=height(nx,nz);
+    if(hNew>0.8&&hNew-height(px,pz)<3.2){px=nx;pz=nz;} // no wading to sea, no scaling cliffs
+    const eye=height(px,pz)+11+(Math.abs(sp)>2?Math.sin(now*0.004)*0.5:0);  // bob only while walking
+    camera.position.set(px,eye,pz);
+    camera.lookAt(px+Math.sin(ang)*40, eye+6, pz-Math.cos(ang)*40);
+  }
   fallsTex.offset.y=-(now*0.0006)%1;
   falls.position.x=fx+Math.sin(now*0.003)*0.6;
   caveGlow.material.opacity=(caveGlow.userData.base??0.6)*(0.9+0.1*Math.sin(now*0.006));
@@ -990,13 +1011,75 @@ function showCreate(){
   };
 }
 function enterIsland(){
+  if((P.seed>>>0)!==SEED){                 // this island belongs to a different seed → rebuild the world for it
+    store.set(SAVE_KEY,JSON.stringify(DB));
+    const u=new URL(location.href);
+    u.searchParams.set('seed',P.seed>>>0);u.searchParams.set('p',P.id);
+    u.searchParams.delete('growth');
+    location.replace(u);return;
+  }
   hideModal();
   P.mir=P.mir||{};TORDER.forEach(t=>P.mir[t]=P.mir[t]||{w:0,s:0});
   $("hud").style.display="block";
   setGrowth(chapterGrowth());
+  refreshPlaced();
   hudUI();clockUI();drawMini();
   SFX.ambient(true);
   setTimeout(()=>bubble("Bright","Welcome"+(P.doneCount?" back":"")+", "+P.name+"! Walk into the world — the island clears up when it gets to see you."),700);
+}
+
+/* ---- BUILD: place real things on your island (same placed[] format as /play) ----
+   2.5D island space is 1800×1300 centered at (900,650); 3D world is ±450.
+   Mapping: x3d=(x2d-900)/2 · z3d=(y2d-650)/2 — old placements appear where they were. */
+const BUILD_ITEMS=[
+  {i:0, k:"tree", n:"Tree", c:0, s:52, a:1.05},
+  {i:2, k:"pine", n:"Pine", c:0, s:54, a:0.7},
+  {i:12,k:"rock", n:"Rock", c:0, s:30, a:1.15},
+  {i:40,k:"house",n:"House",c:20,s:66, a:1.05},
+];
+let building=false,selBuild=null,placedMeshes=[];
+const buildTexCache={};
+function buildTex(k){if(!buildTexCache[k])buildTexCache[k]=loader.load('assets/web/'+k+'.webp',t=>{t.colorSpace=THREE.SRGBColorSpace;});
+  return buildTexCache[k];}
+function spawnPlaced(bi,pl){
+  const hgt=bi.s*0.65,x=(pl.x-900)/2,z=(pl.y-650)/2,y=groundY(x,z);
+  if(Math.abs(x)>460||Math.abs(z)>460||y<0.8)return;   // 2.5D placements beyond this island stay saved, just not shown
+  const sp2=new THREE.Sprite(new THREE.SpriteMaterial({map:buildTex(bi.k),alphaTest:0.3}));
+  sp2.scale.set(hgt*bi.a,hgt,1);sp2.position.set(x,y+hgt*0.46,z);scene.add(sp2);
+  const sh=blobShadow(x,z,hgt*0.30);
+  const col={x,z,r:Math.max(2.4,hgt*0.11)};COLLIDERS.push(col);
+  placedMeshes.push({sp:sp2,sh,col,id:pl.id});
+}
+function refreshPlaced(){
+  for(const m of placedMeshes){m.sp.removeFromParent();m.sh.removeFromParent();
+    const ci=COLLIDERS.indexOf(m.col);if(ci>=0)COLLIDERS.splice(ci,1);}
+  placedMeshes=[];
+  if(!P)return;
+  for(const pl of (P.placed||[])){
+    const bi=BUILD_ITEMS.find(b=>b.i===pl.i);
+    if(bi)spawnPlaced(bi,pl);
+  }
+}
+function renderBDrawer(){
+  $("bdrawer").innerHTML=BUILD_ITEMS.map((b,ix)=>'<div class="chip'+(selBuild===ix?" on":"")+(b.c>P.coins?" cant":"")+'" data-b="'+ix+'">'+
+    '<img src="assets/web/'+b.k+'.webp"><span>'+b.n+(b.c?" · "+b.c+"c":" · free")+'</span></div>').join("");
+  document.querySelectorAll("#bdrawer .chip").forEach(ch=>ch.onclick=()=>{
+    const ix=+ch.dataset.b;
+    if(BUILD_ITEMS[ix].c>P.coins){toast("Not enough coins — do a quest!");return;}
+    selBuild=(selBuild===ix)?null:ix;renderBDrawer();});
+}
+function toggleBuild(){
+  if(!P)return;
+  building=!building;window.__building=building;
+  $("bdrawer").style.display=building?"flex":"none";
+  $("questpanel").style.display=building?"none":"";
+  $("mini").style.display=building?"none":"";
+  const nb=document.querySelector('#nav button[data-nav=build]');
+  if(nb)nb.querySelector(".ic").textContent=building?"🚶":"🔨";
+  if(nb)nb.lastChild.textContent=building?"Walk":"Build";
+  if(building){renderBDrawer();
+    toast("You flew up to see your island! Pick a thing, tap the ground to place it · tap a placed thing to pick it up · drag to pan");}
+  else selBuild=null;
 }
 
 /* ---- nav ---- */
@@ -1007,9 +1090,7 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   else if(k==="map")openMap();
   else if(k==="sound"){const m=SFX.toggleMute();b.querySelector(".ic").textContent=m?"🔇":"🔊";toast(m?"Sound off":"Sound on");}
   else if(k==="parents")openParents();
-  else if(k==="build")showModal('<div class="kicker">the build table</div><h1>Being rebuilt for the 3D island</h1>'+
-    '<p class="sub">Everything you placed on your island is saved and safe. The Build table returns here soon — in full 3D.</p>'+
-    '<div class="btnrow"><button class="warm" onclick="hideModal()">Okay!</button></div>');
+  else if(k==="build")toggleBuild();
 });
 
 /* ---- tap a companion to talk ---- */
@@ -1018,9 +1099,34 @@ let downAt=null;
 addEventListener('pointerdown',e=>{downAt={x:e.clientX,y:e.clientY,t:Date.now()};});
 addEventListener('pointerup',e=>{
   if(!P||SHOWCASE||!downAt)return;
+  if(e.target.closest&&e.target.closest('#hud,#veil,#toast,#bubble'))return;
   if(Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)>10||Date.now()-downAt.t>400)return;
   tapV.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
   ray.setFromCamera(tapV,camera);
+  if(building){
+    const hitP=ray.intersectObjects(placedMeshes.map(m=>m.sp));
+    if(hitP.length){                                  // pick a placed thing back up (coins come back)
+      const mesh=placedMeshes.find(m=>m.sp===hitP[0].object);
+      const idx=P.placed.findIndex(pl=>pl.id===mesh.id);
+      if(idx>=0){const bi=BUILD_ITEMS.find(b=>b.i===P.placed[idx].i);
+        P.coins+=bi.c;P.placed.splice(idx,1);save();hudUI();refreshPlaced();renderBDrawer();
+        SFX.coin();toast("Picked up the "+bi.n.toLowerCase()+(bi.c?" · +"+bi.c+" coins back":""));}
+      return;
+    }
+    if(selBuild!==null){
+      const hitT=ray.intersectObject(terrain);
+      if(hitT.length){
+        const p=hitT[0].point;
+        if(height(p.x,p.z)<1.4){toast("Too close to the sea — pick drier ground");return;}
+        const bi=BUILD_ITEMS[selBuild];
+        if(bi.c>P.coins){toast("Not enough coins — do a quest!");return;}
+        P.coins-=bi.c;
+        const pl={i:bi.i,x:Math.round(p.x*2+900),y:Math.round(p.z*2+650),id:"h"+Date.now().toString(36)};
+        P.placed.push(pl);save();hudUI();spawnPlaced(bi,pl);renderBDrawer();SFX.chime();
+      }
+    }
+    return;
+  }
   const hits=ray.intersectObjects(COMPANIONS.filter(c=>c.sp.visible).map(c=>c.sp));
   if(hits.length){
     const key=hits[0].object.userData.npc,n=NPCS.find(x=>x.k===key);
@@ -1035,7 +1141,12 @@ renderMiniBase();
    l.style.opacity="0";setTimeout(()=>l.style.display="none",700);};
  THREE.DefaultLoadingManager.onLoad=hide;
  setTimeout(hide,7000);}                       // never trap a child on the spinner
-if(!SHOWCASE)showStart();
+if(!SHOWCASE){
+  const pid=Q.get('p');
+  const prof=pid&&DB.profiles.find(x=>x.id===pid&&(x.seed>>>0)===SEED);
+  if(prof){P=prof;enterIsland();}              // arriving on your own island after the seed rebuild
+  else showStart();
+}
 </script>
 <script type="application/json" id="questdata">[["spark","Go outside and find something tiny and beautiful. A ladybug counts double."],["spark","Find the prettiest thing in your house that nobody ever looks at. Look at it properly."],["spark","Watch the sky for two whole minutes. Come back and report the best cloud."],["spark","Find something that glows or shines and show it to somebody."],["spark","Say one good thing about today OUT LOUD before dinner."],["spark","Find a spot of sunlight on the floor and stand in it like it's a stage."],["spark","Tomorrow morning, notice the FIRST good thing that happens. Keep it all day."],["spark","Find three things outside that are your favorite color."],["spark","Ask someone older about the best day they ever had. Listen to the whole thing."],["spark","Draw the sunrise or the sunset — imagining it is allowed."],["spark","Find a stone that looks like it's keeping a secret. Keep it somewhere safe."],["spark","When something goes wrong today, find one tiny okay thing hiding inside it."],["spark","Right after it rains, go out and find something that looks brand new."],["spark","Count the stars for one minute tonight. No stars? Count the lights."],["spark","Tell someone about something you're looking forward to."],["horn","Make a grown-up laugh. For real. Fake laughs don't count."],["horn","Invent a brand-new silly dance and perform it for someone."],["horn","Tell your best joke to somebody. Don't have one? Make one up right now."],["horn","Sing a song wrong ON PURPOSE until someone smiles."],["horn","Have a funny-face contest. Lose dramatically or win gloriously."],["horn","Find the funniest word you know and use it three times today."],["horn","Do a boring task in the silliest way possible. (Still finish it, though.)"],["horn","Give your pet or a stuffed animal a ridiculous new name. Use it all day."],["horn","Laugh at yourself once today — kindly."],["horn","Teach somebody a game you invented. The rules may be ridiculous."],["horn","Talk in a funny accent for five whole minutes."],["horn","Draw the silliest animal that doesn't exist. Name it."],["horn","Find someone grumpy and get them to at least almost-smile."],["horn","Hop everywhere instead of walking for ten minutes."],["horn","Tell a story where every sentence must be sillier than the last one."],["note","Imagine an animal nobody has ever seen. Describe it to someone."],["note","Invent a machine that fixes your most annoying problem. Draw the plans."],["note","Look at a cloud and decide what it's REALLY building up there."],["note","The map has blank edges. Make up what's there — land nobody's imagined yet."],["note","Design your dream bedroom out loud. No budget. Gravity optional."],["note","Invent a new holiday. What do people eat? What do they yell?"],["note","Ask 'what if…?' about something ordinary and follow it for five minutes."],["note","Make up the life story of the oldest thing in your house."],["note","Invent the ice cream flavor that SHOULD exist but doesn't."],["note","Close your eyes and design an island for someone you love."],["note","If today were a movie — what's the title? Who plays you?"],["note","Build something out of whatever's in the room. Give it a name."],["note","Invent a secret word with a friend. Use it like it's normal."],["note","Decide what your future self is doing exactly ten years from today."],["note","Make up a song about something boring until it stops being boring."],["seed","Get someone a glass of water BEFORE they ask. Sneaky kindness is the best kindness."],["seed","Give something away today. Something real — not something broken."],["seed","Do a chore that isn't yours and don't tell anyone."],["seed","Make or draw something for someone. Actually give it to them."],["seed","Thank someone for a thing they always do that nobody notices."],["seed","Share your snack. The good part. Not the crumbs."],["seed","Help someone younger with something that's hard for them and easy for you."],["seed","Water a plant. Or a garden. Or one slightly sad-looking tree."],["seed","Ask someone 'how was your day?' and listen without interrupting once."],["seed","Leave a kind note where someone will find it."],["seed","Feed some birds, or leave water out for animals on a hot day."],["seed","Give somebody your spot — the good chair, the front seat, the first turn."],["seed","Hug someone who needs it. (Check first. Then really hug.)"],["seed","Tell someone in your family one exact thing you love about them."],["seed","Pick up three pieces of trash that aren't yours."],["wing","Try the thing you failed at last time. One more try. Today."],["wing","Show somebody something you made — even if it isn't finished."],["wing","Stand tall, arms up, and yell 'BEHOLD!' before doing something hard."],["wing","Practice something for ten minutes that you wish you were better at."],["wing","Answer a question out loud even if you're not 100% sure."],["wing","Teach someone something you're good at."],["wing","Do the hard part FIRST today, not last."],["wing","Write down three things you can do now that you couldn't do a year ago."],["wing","Balance on one foot longer than yesterday. No yesterday? Start the record."],["wing","Say 'I made this' without adding 'it's bad' after it."],["wing","Race someone. Actually try to win."],["wing","Fix something small that's been broken for ages."],["wing","Learn one word in another language and use it at dinner."],["wing","Beat your own record at anything you can measure."],["wing","When you make a mistake today, say 'interesting!' instead of 'I'm terrible.'"],["shield","Do the thing you've been avoiding. You know the one. Scared is allowed — scared is the point."],["shield","Say sorry for something FIRST, before anyone asks you to."],["shield","Try a food you already decided you hate. One real bite."],["shield","Ask a question in front of people, even if your voice shakes."],["shield","Tell someone the truth about something small you fibbed about."],["shield","Go somewhere slightly dark (with permission) and count to twenty like a legend."],["shield","Introduce yourself to someone you don't know well. First name minimum."],["shield","Stand up for someone today, even in a small way."],["shield","Let someone else go first when you REALLY wanted to be first."],["shield","Try the big slide, the high branch, the deep end — the safe-but-scary one. Grown-up nearby."],["shield","Say 'I don't know' out loud once today. It's braver than pretending."],["shield","Ask for help with something you've been struggling with alone."],["shield","Watch the scary-ish part without covering your eyes. Blinking allowed."],["shield","Do your least favorite chore without being asked twice."],["shield","Tell someone one thing you're afraid of. Fears shrink when you say them."],["thread","Keep a promise today. Even a tiny one. ESPECIALLY a tiny one."],["thread","Finish something you started and abandoned."],["thread","Call or write to someone you haven't talked to in a while."],["thread","Make your bed like you mean it. Tomorrow: again."],["thread","Remember something someone told you last week — and ask them about it."],["thread","Put something back exactly where it belongs. Then two more things."],["thread","Make a plan with someone and ACTUALLY do the plan."],["thread","Say 'I'll be there in one minute' — and be there in one minute."],["thread","Do the same kind thing for the same person two days in a row."],["thread","Tie together things that belong together. Socks count. Families count double."],["thread","Thank the person who always shows up for you."],["thread","Take care of something living today. And again tomorrow."],["thread","When you say 'just five more minutes' — keep it to five. Time yourself."],["thread","Ask the oldest person you know for a story from before you existed."],["thread","Show someone how to do the thing they keep forgetting. Light the way."]]</script>
 </body></html>
