@@ -153,10 +153,16 @@ function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
 function fbm(x,y){let s=0,amp=0.5,f=1;for(let i=0;i<5;i++){s+=amp*vnoise(x*f+OFF,y*f+OFF2);f*=2;amp*=0.5;}return s;}
 function smooth(a,b,t){t=Math.max(0,Math.min(1,(t-a)/(b-a)));return t*t*(3-2*t);}
 const TERR=900;
+/* expansions: whole new pieces of land, earned by Big Deeds in the real world */
+const LOBES3=[{x:430,z:310,r:190},{x:-470,z:-130,r:200},{x:80,z:-560,r:170}];
+const EXPANSIONS=Math.min(LOBES3.length,parseInt(Q.get('exp')||'0',10)||0);
 function height(x,z){
   const nx=x/TERR,nz=z/TERR,r=Math.sqrt(nx*nx+nz*nz)*2;
   const island=1-smooth(0.62,1.04,r);
-  let h=island*(6+fbm(x*0.0016,z*0.0016)*22);
+  let m=island;
+  for(let i=0;i<EXPANSIONS;i++){const L=LOBES3[i];
+    m=Math.max(m,1-smooth(0.55,1.0,Math.hypot(x-L.x,z-L.z)/L.r));}
+  let h=m*(6+fbm(x*0.0016,z*0.0016)*22);
   const ridge=Math.max(0,(-nz-0.02));
   h+=island*(ridge*80+ridge*ridge*260);
   h+=island*ridge*ridge*fbm(x*0.004+9,z*0.004+3)*90;
@@ -417,8 +423,8 @@ const trng=mulberry32(SEED+7);
 for(let i=0;i<40;i++){
   let x,z,y,k=0;
   do{x=(trng()*2-1)*TERR*0.7;z=(trng()*2-1)*TERR*0.7;y=height(x,z);k++;}
-  while((y<2||y>30||Math.hypot(x-15,z-235)<80)&&k<50);
-  if(y<2||y>30)continue;
+  while((y<3.2||y>30||Math.hypot(x-15,z-235)<80)&&k<50);
+  if(y<3.2||y>30)continue;
   const kind=trng();let mat=treeMat,asp=1;              // pines climb, one autumn tree remembers
   let sc=46+trng()*26;                                  // a tree is 3–4.5× a person, not a bush
   if(y>16&&kind<0.5){mat=pineMat;asp=0.62;sc=80+trng()*36;}   // pines tower over the round trees
@@ -750,12 +756,12 @@ function hudUI(){
   $("xpfill").style.width=(P.chapter>=10?100:(P.doneCount%5)/5*100)+"%";
   questPanelUI();
 }
+function dayNum(){const ts=parseInt((P.id||"p0").slice(1),36);
+  return isFinite(ts)?Math.max(1,Math.floor((Date.now()-ts)/864e5)+1):1;}
 function clockUI(){
   const n=new Date();let h=n.getHours();const am=h<12?"AM":"PM";h=h%12||12;
   $("hud_time").textContent=h+":"+String(n.getMinutes()).padStart(2,"0")+" "+am;
-  const ts=parseInt((P.id||"p0").slice(1),36);
-  const day=isFinite(ts)?Math.max(1,Math.floor((Date.now()-ts)/864e5)+1):1;
-  $("hud_day").textContent="Day "+day;
+  $("hud_day").textContent="Day "+dayNum();
 }
 function questPanelUI(){
   let h="";let n=1;
@@ -781,7 +787,7 @@ $("qp_head").onclick=()=>{const l=$("qp_list");const on=l.style.display!=="none"
 /* ---- minimap: the real island, seen from above ---- */
 const miniBase=document.createElement("canvas");miniBase.width=miniBase.height=208;
 function renderMiniBase(){
-  const g=miniBase.getContext("2d"),S=208,R=520;
+  const g=miniBase.getContext("2d"),S=208,R=760;
   for(let py=0;py<S;py++)for(let px2=0;px2<S;px2++){
     const wx=(px2/S*2-1)*R,wz=(py/S*2-1)*R,y=height(wx,wz);
     let c;
@@ -793,7 +799,7 @@ function renderMiniBase(){
 function drawMini(){
   const cv2=$("minicv"),g=cv2.getContext("2d");
   g.drawImage(miniBase,0,0);
-  const S=208,R=520,mx=(px/R+1)/2*S,mz=(pz/R+1)/2*S;
+  const S=208,R=760,mx=(px/R+1)/2*S,mz=(pz/R+1)/2*S;
   for(const c of COMPANIONS){if(!c.sp.visible)continue;
     const nx2=(c.sp.position.x/R+1)/2*S,nz2=(c.sp.position.z/R+1)/2*S;
     g.fillStyle="#ffd76a";g.beginPath();g.arc(nx2,nz2,3.4,0,Math.PI*2);g.fill();
@@ -809,12 +815,42 @@ function openMap(){
   showModal('<div class="kicker">your island · seen from above</div><h1>'+esc(P.islandName)+'</h1>'+
     '<div style="text-align:center"><canvas id="bigmap" width="208" height="208" style="width:min(78vw,340px);border-radius:14px;border:3px solid #b98d3f"></canvas></div>'+
     '<p class="sub">Gold dots are your companions, waiting at their story places. The little arrow is you.</p>'+
-    '<div class="btnrow"><button class="warm" onclick="hideModal()">Back to walking</button></div>');
+    '<div class="btnrow"><button class="warm" onclick="hideModal()">Back to walking</button>'+
+    '<button id="postcard_go">📮 Send a postcard</button></div>');
+  $("postcard_go").onclick=makePostcard;
   const g=$("bigmap").getContext("2d");g.drawImage(miniBase,0,0);
-  const S=208,R=520;
+  const S=208,R=760;
   for(const c of COMPANIONS){if(!c.sp.visible)continue;
     g.fillStyle="#ffd76a";g.beginPath();g.arc((c.sp.position.x/R+1)/2*S,(c.sp.position.z/R+1)/2*S,4,0,Math.PI*2);g.fill();}
   g.fillStyle="#fff";g.beginPath();g.arc((px/R+1)/2*S,(pz/R+1)/2*S,4,0,Math.PI*2);g.fill();
+}
+
+/* ---- postcards: a framed painting of your island (locked decision #3) ---- */
+function makePostcard(){
+  hideModal();
+  setTimeout(()=>{
+    renderer.render(scene,camera);
+    const shot=renderer.domElement;
+    const c=document.createElement("canvas");c.width=1080;c.height=1350;
+    const g=c.getContext("2d");
+    const s=Math.max(c.width/shot.width,c.height/shot.height);
+    g.drawImage(shot,(c.width-shot.width*s)/2,(c.height-shot.height*s)/2,shot.width*s,shot.height*s);
+    g.strokeStyle="#f3e2bd";g.lineWidth=36;g.strokeRect(18,18,c.width-36,c.height-36);
+    g.strokeStyle="#b98d3f";g.lineWidth=6;g.strokeRect(42,42,c.width-84,c.height-84);
+    g.fillStyle="rgba(58,33,16,0.84)";g.fillRect(42,c.height-196,c.width-84,154);
+    g.textAlign="center";
+    g.fillStyle="#ffe9b0";g.font="bold 58px Georgia";g.fillText(P.islandName,c.width/2,c.height-124);
+    g.fillStyle="#e8c88a";g.font="30px Georgia";
+    g.fillText("Chapter "+P.chapter+" · Day "+dayNum()+" · The Little Big Island",c.width/2,c.height-74);
+    c.toBlob(async b2=>{
+      const file=new File([b2],"my-island-postcard.jpg",{type:"image/jpeg"});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{await navigator.share({files:[file],title:P.islandName});return;}catch(e){}
+      }
+      const a=document.createElement("a");a.href=URL.createObjectURL(b2);a.download="my-island-postcard.jpg";a.click();
+      toast("Postcard saved! Show a grown-up before you share it.");
+    },"image/jpeg",0.88);
+  },350);
 }
 
 /* ---- quests (the real deck — put the screen down, go do it) ---- */
@@ -963,10 +999,12 @@ function doDeed(id){
   }
   P.deeds[id]="done";save();SFX.big();confetti();hudUI();
   if(d.reward.type==="expand"){
-    P.expansions=(P.expansions||0)+1;save();
+    P.expansions=(P.expansions||0)+1;
+    store.set(SAVE_KEY,JSON.stringify(DB));
     showModal('<div class="kicker">the ground rumbles politely</div><h1>Your island GREW.</h1>'+
-      '<p class="sub">A whole new piece of land rose out of the sea, because of something kind and real you did out there. It\'s hiding in the fog.</p>'+
-      '<div class="btnrow"><button class="warm" onclick="hideModal()">Go explore it</button></div>');
+      '<p class="sub">A whole new piece of land rose out of the sea, because of something kind and real you did out there. Look at your map — then go find your new shore.</p>'+
+      '<div class="btnrow"><button class="warm" id="exp_go">Watch it rise</button></div>');
+    $("exp_go").onclick=()=>enterIsland();      // world rebuilds with the new land
   }else if(d.reward.type==="cat"){
     showModal('<div class="kicker">rescue complete</div><h1>You saved the cat!</h1>'+
       '<p class="sub">You did the scary thing, so you were brave enough to climb. The cat pretends it was fine the whole time. Cats.</p>'+
@@ -1011,10 +1049,11 @@ function showCreate(){
   };
 }
 function enterIsland(){
-  if((P.seed>>>0)!==SEED){                 // this island belongs to a different seed → rebuild the world for it
+  if((P.seed>>>0)!==SEED||(P.expansions||0)!==EXPANSIONS){   // different island (seed or grown land) → rebuild the world
     store.set(SAVE_KEY,JSON.stringify(DB));
     const u=new URL(location.href);
     u.searchParams.set('seed',P.seed>>>0);u.searchParams.set('p',P.id);
+    u.searchParams.set('exp',P.expansions||0);
     u.searchParams.delete('growth');
     location.replace(u);return;
   }
