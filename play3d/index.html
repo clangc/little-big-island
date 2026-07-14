@@ -110,7 +110,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0e3742;font-family:Ge
     <button data-nav="build"><span class="ic">🔨</span>Build</button>
     <button data-nav="map"><span class="ic">🗺️</span>Map</button>
     <button data-nav="sound"><span class="ic">🔊</span>Sound</button>
-    <button data-nav="switch"><span class="ic">🚪</span>Switch</button>
+    <button data-nav="parents"><span class="ic">🛡️</span>Parents</button>
   </div>
 </div>
 <div id="veil"><div id="modal"></div></div>
@@ -749,6 +749,8 @@ function questPanelUI(){
   }
   const doneDeeds=DEEDS.filter(d=>P.deeds[d.id]==="done").length;
   if(doneDeeds)h+='<div class="qrow"><span class="st ok">✓ '+doneDeeds+' Big Deed'+(doneDeeds>1?"s":"")+' confirmed</span></div>';
+  const myPend=(DB.pending||[]).filter(x=>x.pid===P.id).length;
+  if(myPend)h+='<div class="qrow"><span class="st">🛡️ '+myPend+' waiting for a grown-up</span></div>';
   $("qp_list").innerHTML=h||'<div class="qrow"><span class="st">All caught up. Go play outside!</span></div>';
   document.querySelectorAll("#qp_list [data-open]").forEach(r=>r.onclick=()=>r.dataset.open==="quest"?openQuest():openDeeds());
 }
@@ -832,18 +834,82 @@ function openQuest(){
   const finish=wit=>{
     const tr=q[0];
     P.coins+=wit?12:8;P.doneCount++;P.deckPos++;P.activeQuest=null;
-    P.mir[tr][wit?"w":"s"]++;save();
+    P.mir[tr][wit?"w":"s"]++;
+    if(!wit){ // the grown-up hasn't seen it yet → it waits in the Parent Corner
+      DB.pending=DB.pending||[];
+      DB.pending.push({pid:P.id,name:P.name,tr,text:q[1],at:Date.now()});
+    }
+    save();
     hideModal();confetti();SFX.quest();SFX.coin();
     const who=NPCS.find(n=>n.name===TRE[tr].who);
     const spk=(who&&who.ch>P.chapter)?"The island":TRE[tr].who;
     bubble(spk,PRAISE[tr][Math.floor(Math.random()*PRAISE[tr].length)],6000);
-    toast(wit?"+12 coins · the island saw you. It grew a little.":"+8 coins · it counts! But the island only GROWS when somebody sees.");
+    toast(wit?"+12 coins · the island saw you. It grew a little."
+             :"+8 coins · it counts! Ask a grown-up to confirm it in the Parent Corner — the island grows when it's SEEN.");
     const nc=chapterOf(P.doneCount);
     hudUI();
     if(nc>P.chapter)chapterUp(nc);
   };
   $("q_wit").onclick=()=>finish(true);
   $("q_solo").onclick=()=>finish(false);
+}
+
+/* ---- the Parent Corner: grown-ups are part of the game (per the family plan) ---- */
+function pinGate(then){
+  if(!DB.parentPin){
+    showModal('<div class="kicker">grown-ups only · one-time setup</div><h1>Create a Parent PIN</h1>'+
+      '<p class="sub">This corner is for grown-ups: you confirm the real-world quests your child reports, and their island grows. Pick a 4-digit PIN kids don\'t know.</p>'+
+      '<input id="pin1" inputmode="numeric" maxlength="4" placeholder="4-digit PIN">'+
+      '<input id="pin2" inputmode="numeric" maxlength="4" placeholder="Repeat PIN">'+
+      '<div class="btnrow"><button class="warm" id="pin_go">Save PIN</button>'+
+      '<button class="ghost" onclick="hideModal()">Cancel</button></div>');
+    $("pin_go").onclick=()=>{
+      const a=$("pin1").value.trim(),b=$("pin2").value.trim();
+      if(!/^\d{4}$/.test(a)){$("pin1").focus();return;}
+      if(a!==b){toast("PINs don't match — try again");return;}
+      DB.parentPin=a;save();then();
+    };
+    return;
+  }
+  showModal('<div class="kicker">grown-ups only</div><h1>Parent Corner</h1>'+
+    '<p class="sub">Enter the parent PIN.</p>'+
+    '<input id="pin1" inputmode="numeric" maxlength="4" placeholder="PIN">'+
+    '<div class="btnrow"><button class="warm" id="pin_go">Enter</button>'+
+    '<button class="ghost" onclick="hideModal()">Cancel</button></div>');
+  $("pin_go").onclick=()=>{
+    if($("pin1").value.trim()===DB.parentPin)then();
+    else toast("That's not the PIN");
+  };
+}
+function openParents(){pinGate(renderParents);}
+function renderParents(){
+  const pend=(DB.pending||[]);
+  let h='<div class="kicker">parent corner · real deeds, confirmed by you</div><h1>Waiting for you</h1>';
+  if(!pend.length)h+='<p class="sub">Nothing waiting. When your child finishes a quest and taps “I did it,” it appears here for your confirmation — and their island grows when you confirm.</p>';
+  pend.forEach((it,i)=>{
+    h+='<div class="deed"><div><div class="dt">'+esc(it.name)+' · '+TRE[it.tr].name+'</div>'+
+      '<div class="dd">'+esc(it.text)+'</div>'+
+      '<button class="sm" data-conf="'+i+'">It really happened — grow the island (+4)</button> '+
+      '<button class="sm" data-skip="'+i+'" style="opacity:.7">Not yet</button></div></div>';
+  });
+  h+='<div class="qvoice">House rules from the book: kids can never spend money here, there is no chat, and coins are only earned by real-world deeds. Your child\'s data lives on this device.</div>'+
+    '<div class="btnrow"><button id="pp_switch">Switch explorer</button>'+
+    '<button class="ghost" onclick="hideModal()">Close</button></div>';
+  showModal(h);
+  $("pp_switch").onclick=()=>{hideModal();showStart();};
+  document.querySelectorAll("[data-conf]").forEach(b=>b.onclick=()=>{
+    const it=(DB.pending||[]).splice(+b.dataset.conf,1)[0];
+    const prof=DB.profiles.find(p=>p.id===it.pid);
+    if(prof){prof.coins+=4;
+      if(prof.mir&&prof.mir[it.tr]&&prof.mir[it.tr].s>0){prof.mir[it.tr].s--;prof.mir[it.tr].w++;}}
+    save();SFX.big();confetti();
+    if(P&&prof&&P.id===prof.id){hudUI();
+      bubble(TRE[it.tr].who,"A grown-up saw it. It's REAL real now. The island grew.",5000);}
+    renderParents();
+  });
+  document.querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{
+    (DB.pending||[]).splice(+b.dataset.skip,1);save();renderParents();
+  });
 }
 
 /* ---- big deeds (grown-up sized real-life stuff) ---- */
@@ -940,7 +1006,7 @@ document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
   else if(k==="deeds")openDeeds();
   else if(k==="map")openMap();
   else if(k==="sound"){const m=SFX.toggleMute();b.querySelector(".ic").textContent=m?"🔇":"🔊";toast(m?"Sound off":"Sound on");}
-  else if(k==="switch")showStart();
+  else if(k==="parents")openParents();
   else if(k==="build")showModal('<div class="kicker">the build table</div><h1>Being rebuilt for the 3D island</h1>'+
     '<p class="sub">Everything you placed on your island is saved and safe. The Build table returns here soon — in full 3D.</p>'+
     '<div class="btnrow"><button class="warm" onclick="hideModal()">Okay!</button></div>');
